@@ -1,146 +1,146 @@
-# Project Audit — Current State Analysis
+﻿# Project Audit — Complete Feature Gap Analysis
 
 Date: 2026-06-24
+Audit Type: Full codebase deep-dive — backend, frontend, database, infrastructure
 
 ---
 
 ## Executive Summary
 
-| Metric | Value |
-|--------|-------|
-| Backend TypeScript | ✅ Build PASS |
-| Frontend Vite | ✅ Build PASS (+ PWA) |
-| Database Schema | ✅ 34 tables, 8 stored procs, seed data |
-| API Endpoints | ✅ All 13 modules functional |
-| Authentication | ✅ JWT + bcrypt (admin: admin@gymer.com / admin123) |
-| Total Source Files | ~94 |
+| Metric | Status |
+|--------|--------|
+| Backend TypeScript Build | ✅ PASS |
+| Frontend Vite Build | ✅ PASS (+ PWA) |
+| Database Tables | 34 tables (0 stored procs — docs incorrectly claim 8) |
+| API Modules w/ Controllers | 12/16 (75%) |
+| Frontend Pages | 17 implemented + 4 with frontend-only |
+| Automated Tests | ❌ Zero test files in source |
+| Auth (JWT) | ✅ Implemented |
+| RBAC | ✅ (member/coach/admin) |
+| CI/CD | ❌ None |
+| API Documentation | ❌ None |
+| Docker | ✅ docker-compose, nginx |
 
 ---
 
 ## Severity Definitions
 
-- **Critical** — Blocks production, security risk, or data loss
-- **High** — Major feature broken, significant UX issue, performance at scale
-- **Medium** — Missing feature, maintainability concern, dev friction
+- **Critical** — Blocks production, security risk, data loss
+- **High** — Major feature broken, significant UX/performance issue
+- **Medium** — Missing feature, maintainability concern
 - **Low** — Polish, SEO, minor improvements
 
 ---
 
-## Critical Issues
+## Feature Classification Matrix
 
-| # | Issue | Area | Impact | Effort | Fix |
-|---|-------|------|--------|--------|-----|
-| C1 | No service layer — controllers contain raw SQL | Backend | Maintenance burden, hard to test | 5 days | Extract SQL to service layer, use repository pattern |
-| C2 | Controllers mutate `res.json` directly (audit middleware) | Backend | Fragile, breaks abstraction | 4 hours | Refactor audit to use response wrapper |
-| C3 | No automated tests (unit/integration/e2e) | Both | No regression safety | 10 days | Add Vitest (FE), Jest (BE), Playwright (E2E) |
+### 1. Fully Implemented (Backend API + Frontend Page + DB)
 
----
+| Feature | Backend | Frontend | DB Tables | Notes |
+|---------|---------|----------|-----------|-------|
+| Auth (login/register/refresh) | ✅ | ✅ | Users | bcrypt + JWT pair |
+| CRM (customers, notes, tasks) | ✅ | ✅ | CRMCustomers, CRMNotes, CRMTasks | Pagination supported |
+| Coupons (CRUD + validate) | ✅ | ✅ | Coupons, CouponUsages | Full validation logic |
+| Invoices (list/get/generate) | ✅ | ✅ | Invoices, InvoiceItems | `sendEmail` is a no-op |
+| Tickets (CRUD + messages) | ✅ | ✅ | Tickets, TicketMessages, TicketAttachments | Role-based visibility |
+| Loyalty (points, rewards, redeem) | ✅ | ✅ | Points, PointTransactions, RewardsCatalog, RewardRedemptions | Daily login bonus |
+| Referral (codes, commissions) | ✅ | ✅ | ReferralCodes, ReferralTransactions, ReferralClicks, ReferralRewards | Code generation + tracking |
+| Analytics Dashboard | ✅ | ✅ | AnalyticsDaily, AnalyticsRetention | DAU/MAU/revenue/churn |
+| Revenue Dashboard | ✅ | ✅ | (uses Payments) | Trend, sales, funnel |
+| Audit Logs | ✅ | ✅ | AuditLogs | Filtered + paginated |
+| Backup (create/list/restore) | ✅ | ✅ | BackupLogs | ⚠️ SQL injection in restore |
 
-## High Issues
+### 2. Frontend-Only (UI exists, no backend API)
 
-| # | Issue | Area | Impact | Effort | Fix |
-|---|-------|------|--------|--------|-----|
-| H1 | No frontend error tracking / boundaries | Frontend | Silent failures in production | 1 day | Add Sentry, React error boundaries, global error UI |
-| H2 | No pagination on any list endpoint | Backend | Performance at scale | 2 days | Add `page`, `limit`, `total` to all GET lists |
-| H3 | Hardcoded demo credentials in seed SQL | Backend | Security risk if deployed | 30 min | Use env vars or runtime generation |
-| H4 | `StatCard` uses dynamic Tailwind classes (`bg-${color}-500/20`) | Frontend | JIT purge removes them — broken UI | 15 min | Use class variance or predefined classes |
+| Feature | Frontend | DB Tables | Missing |
+|---------|----------|-----------|---------|
+| Video Library | ✅ | Workouts, WorkoutExercises, WorkoutSessions | No `/api/videos` route or controller |
+| Coach Booking | ✅ | None for bookings | No schedule/booking tables or controller |
+| Membership Plans | ✅ | Plans, Memberships | No `/api/plans` route or controller |
 
----
+### 3. Backend Modules — Empty Scaffolds (0 files)
 
-## Medium Issues
+| Module | Purpose |
+|--------|---------|
+| `modules/affiliate` | Affiliate program management |
+| `modules/notifications` | In-app notifications |
+| `modules/users` | User management (CRUD for admin) |
+| `jobs/` | Scheduled tasks (cron) |
+| `templates/` | Email/notification templates |
 
-| # | Issue | Area | Impact | Effort | Fix |
-|---|-------|------|--------|--------|-----|
-| M1 | No API documentation (OpenAPI/Swagger) | Both | Onboarding friction | 2 days | Add `@nestjs/swagger` or manual OpenAPI spec |
-| M2 | No CI/CD pipeline | DevOps | Deployment risk | 1 day | GitHub Actions: build, test, docker, deploy |
-| M3 | No pre-commit hooks (lint, format, type-check) | Both | Code quality drift | 4 hours | Add Husky + lint-staged + prettier |
-| M4 | Coach route `/coach` returns 404 for admin | Backend | Admin can't access coach features | 2 hours | Fix role check or route guard |
-| M5 | `useApi.ts` error state never surfaced to user | Frontend | Silent API failures | 2 hours | Add error toast + retry mechanism |
-| M6 | Multiple pages duplicate code (`MembersPage` ≈ `CRMPage`) | Frontend | Maintenance burden | 2 hours | Extract shared table component |
+### 4. DB Tables with No API
 
----
-
-## Low Issues
-
-| # | Issue | Area | Impact | Effort | Fix |
-|---|-------|------|--------|--------|-----|
-| L1 | Missing `index.html` meta tags (description, OG) | Frontend | SEO | 15 min | Add meta tags |
-| L2 | No `robots.txt` | Frontend | SEO | 15 min | Add `robots.txt` to `public/` |
-| L3 | No 404 page | Frontend | Broken routes show blank | 30 min | Add `NotFoundPage` + catch-all route |
-| L4 | Color palette indigo-based, not brand green | Frontend | Brand consistency | 30 min | Update Tailwind config to green primary |
-| L5 | No Inter font loaded | Frontend | Typography quality | 15 min | Add `@import 'inter'` or self-host |
-
----
-
-## Frontend UX Issues (from UI Audit)
-
-| Priority | Fix | Effort |
-|----------|-----|--------|
-| P0 | Fix StatCard Tailwind classes | 15 min |
-| P0 | Fix Dashboard hardcoded values | 30 min |
-| P0 | Add error/empty/skeleton states to all pages | 2h |
-| P0 | Add skeleton loading | 1h |
-| P1 | Add Inter font | 15 min |
-| P1 | Update color palette to green | 30 min |
-| P1 | Add command menu (Ctrl+K) | 2h |
-| P1 | Add page transitions | 1h |
-| P2 | Add responsive breakpoints | 3h |
-| P2 | Add aria labels | 1h |
-| P2 | Create missing pages (video, booking, membership, profile) | 8h |
-| P3 | Fix password change API | 30 min |
-| P3 | Add search/filter to tables | 3h |
+| Table | Purpose |
+|-------|---------|
+| Workouts, WorkoutExercises, WorkoutSessions | Video/workout library |
+| NutritionPlans, NutritionEntries | Meal planning |
+| Affiliates, AffiliatePayouts | Affiliate program |
+| Promotions | Marketing |
+| Notifications | In-app messaging |
 
 ---
 
-## Missing Frontend Pages (UI Only — Need Backend)
+## Issues Found
 
-| Page | Route | Status |
-|------|-------|--------|
-| Video Library | `/video` | UI only, no API |
-| Coach Booking | `/booking` | UI only, no API |
-| Membership Plans | `/membership` | UI only, no API |
-| User Profile | `/profile` | UI only, no API |
+### Critical
+
+| # | Issue | Location | Risk | Fix |
+|---|-------|----------|------|-----|
+| C1 | SQL injection in `restoreBackup` — filepath from DB concatenated into SQL without parameterization | `backup.controller.ts:42` | Attacker who modifies BackupLogs executes arbitrary SQL | Parameterize: `query("... DISK=N@fp", { fp })` |
+| C2 | Zero automated tests in entire codebase | Both | No regression detection | Add Vitest (FE) + Jest (BE) |
+| C3 | `sendEmail` is a no-op — sets flag without sending | `invoice.controller.ts:39` | User believes email sent when it wasn't | Implement nodemailer or remove endpoint |
+| C4 | Refresh tokens never invalidated — no blacklist, no version, no rotation | Auth module | Stolen refresh token = permanent access | Add token version column to Users |
+
+### High
+
+| # | Issue | Location | Risk | Fix |
+|---|-------|----------|------|-----|
+| H1 | CORS origin hardcoded to localhost — no production override | `docker-compose.yml` | Production CORS rejects real domain | Use env-based CORS config |
+| H2 | SA password in plaintext in docker-compose | `docker-compose.yml:17` | DB admin password visible to anyone | Use Docker secrets |
+| H3 | CoachDashboard has no route guard — `/coach` unprotected | `App.tsx:55` | Any member accesses coach area | Add `CoachRoute` or `authorize` |
+| H4 | Two StatCard components with different interfaces | `components/shared/StatCard.tsx` vs `components/ui/stat-card.tsx` | Props mismatch, `subtitle` only on one | Consolidate to single component |
+| H5 | `useApi` defaults to empty deps array | `useApi.ts:5` | Stale data when URL changes | Default to `[url]` |
+| H6 | SettingsPage password change is client-side placeholder | `SettingsPage.tsx:14-18` | User believes password changed — it didn't | Wire to auth API |
+| H7 | `/refresh` endpoint has no rate limiting | `auth.routes.ts` | Brute-force refresh token guessing | Add rate limiter |
+| H8 | Dashboard "Recent Activity" is hardcoded mock data | `DashboardPage.tsx:56-71` | No real activity shown | Build API or remove |
+
+### Medium
+
+| # | Issue | Location | Risk | Fix |
+|---|-------|----------|------|-----|
+| M1 | 0 stored procedures exist — schema drops 8 but never creates them | `full_schema.sql` | `executeProc` calls will fail at runtime | Add CREATE PROCEDURE blocks |
+| M2 | Coach route blocks admin — `authorize(UserRole.COACH)` | `coach.routes.ts` | Admin can't view coach dashboards | Add `UserRole.ADMIN` to allowed roles |
+| M3 | No DB migration system — full schema drop/recreate | `database/` | Can't evolve production schema | Add migration framework |
+| M4 | `useApi` only supports GET | `useApi.ts` | No loading/error for mutations | Extend with method param |
+| M5 | Duplicate DataTable components | `components/shared/DataTable.tsx` vs `components/ui/data-table.tsx` | Code duplication | Consolidate |
+| M6 | No graceful shutdown handler | `server.ts` | DB connection leaks on restart | Add `SIGTERM` handler |
+| M7 | Tokens in localStorage | `authStore.ts` | XSS → token theft | Consider httpOnly cookies |
+| M8 | No CSP headers | `app.ts:20` | Weak XSS mitigation | Configure Helmet CSP |
+| M9 | `isAuthenticated` never validates token on init | `authStore.ts:9` | Shows logged-in UI with expired token | Check token expiry |
+| M10 | `multer` installed but no upload routes | `config.ts`, `package.json` | File uploads impossible | Implement upload endpoint |
+| M11 | No SSL/HTTPS in nginx config | `nginx.conf` | Unencrypted traffic | Add SSL cert |
+
+### Low
+
+| # | Issue | Location | Risk | Fix |
+|---|-------|----------|------|-----|
+| L1 | No `robots.txt` | `frontend/public/` | Poor crawler behavior | Add robots.txt |
+| L2 | Missing meta tags (description, OG) | `index.html` | Bad social sharing | Add meta tags |
+| L3 | Dashboard redirect flashes before navigating | `DashboardPage.tsx:10-11` | UX flicker | Use route-level guard |
+| L4 | Demo credentials in README/docs | docs | Deployment with default creds | Add warnings |
+| L5 | No Docker healthcheck on backend | `docker-compose.yml` | No auto-restart on failure | Add HEALTHCHECK |
+| L6 | No Inter font loaded | Tailwind config | Inconsistent typography | Load Inter |
 
 ---
 
-## Backend Feature Completeness
+## Architecture Fragility
 
-| Module | CRUD | Validation | Auth | Tests |
-|--------|------|------------|------|-------|
-| Auth | ✅ | ✅ | Public | ❌ |
-| Analytics | ✅ (read) | ✅ | Admin | ❌ |
-| Audit | ✅ (read) | ✅ | Admin | ❌ |
-| Backup | ✅ | ✅ | Admin | ❌ |
-| Coaches | ✅ | ✅ | Auth | ❌ |
-| Coupons | ✅ | ✅ | Auth | ❌ |
-| CRM | ✅ | ✅ | Auth | ❌ |
-| Invoices | ✅ | ✅ | Auth | ❌ |
-| Loyalty | ✅ | ✅ | Auth | ❌ |
-| Referral | ✅ | ✅ | Auth | ❌ |
-| Revenue | ✅ (read) | ✅ | Admin | ❌ |
-| Tickets | ✅ | ✅ | Auth | ❌ |
-
----
-
-## Security Concerns
-
-| Issue | Severity | Fix |
-|-------|----------|-----|
-| Hardcoded JWT secrets in `.env.example` | Medium | Use strong random secrets in production |
-| No rate-limit on auth endpoints | Medium | Add stricter rate limit on `/login`, `/register` |
-| No CSP headers | Low | Configure Helmet CSP |
-| No input sanitization on SQL (uses param queries) | Low | Already safe — params used everywhere |
-
----
-
-## Performance Concerns
-
-| Issue | Severity | Fix |
-|-------|----------|-----|
-| No DB connection pooling config tuning | Medium | Configure pool size per load |
-| No query caching | Medium | Add Redis for frequent reads |
-| No pagination | High | Add to all list endpoints |
-| N+1 queries in analytics | Medium | Use stored procs (already implemented) |
+| Issue | Detail |
+|-------|--------|
+| Controllers contain raw SQL | No service/repository layer — hard to test |
+| No transaction management | Multi-step DB operations can partial-write |
+| `audit.ts` monkey-patches `res.json` | Can break other middleware |
+| No typed API client | Frontend uses `any` casts — contract drift undetected |
 
 ---
 
@@ -148,23 +148,25 @@ Date: 2026-06-24
 
 | Category | Count |
 |----------|-------|
-| Critical | 3 |
-| High | 4 |
-| Medium | 6 |
-| Low | 5 |
-| **Total** | **18** |
+| Critical | 4 |
+| High | 8 |
+| Medium | 11 |
+| Low | 6 |
+| **Total** | **29** |
 
 ---
 
-## Recommended Next Actions (Priority Order)
+## Recommended Next Actions
 
-1. **P0:** Fix StatCard Tailwind classes, Dashboard hardcoded values
-2. **P0:** Add error/empty/skeleton states
-3. **C3:** Add test infrastructure (Vitest + Playwright)
-4. **C1:** Extract service layer from controllers
-5. **H2:** Add pagination to all list endpoints
-6. **M1:** Generate OpenAPI spec
-7. **M2:** Add GitHub Actions CI/CD
-8. **M3:** Add pre-commit hooks
-9. **M4:** Fix coach route 404
-10. Build missing backend APIs for Video, Booking, Membership, Profile pages
+1. **C3** — Remove fake `sendEmail` or implement actual SMTP
+2. **C1** — Fix SQL injection in backup restore
+3. **C4** — Implement refresh token invalidation
+4. **H6** — Wire SettingsPage password change to API
+5. **H1/H2** — Fix production CORS + docker secrets
+6. **M1** — Add missing stored procedures or inline SQL
+7. **H7** — Add rate limiting to `/refresh`
+8. **C2** — Set up test infrastructure
+9. **H4/H5** — Consolidate duplicate components
+10. **H3** — Fix coach route guard
+11. Build missing APIs: Profile, Membership Plans, Coach Booking
+12. **M10** — Implement file upload
