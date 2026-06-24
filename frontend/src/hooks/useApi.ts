@@ -11,10 +11,15 @@ export function useApi<T>(url: string, deps: any[] = []) {
     try {
       const { data: res } = await api.get(url);
       setData(res.data);
-    } catch (err: any) { setError(err.response?.data?.message || 'Error'); }
-    finally { setLoading(false); }
+    } catch (err: any) {
+      const msg = err.response?.data?.message || err.message || 'An error occurred';
+      setError(msg);
+    } finally {
+      setLoading(false);
+    }
   }, [url]);
 
   useEffect(() => { refetch(); }, deps);
+
   return { data, loading, error, refetch };
 }

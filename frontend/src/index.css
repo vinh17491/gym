@@ -3,27 +3,131 @@
 @tailwind utilities;
 
 @layer base {
-  body { @apply bg-dark-900 text-white antialiased; }
+  body {
+    @apply bg-[#020617] text-white antialiased font-sans;
+  }
   ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { @apply bg-dark-800; }
-  ::-webkit-scrollbar-thumb { @apply bg-dark-600 rounded; }
+  ::-webkit-scrollbar-track { @apply bg-[#0F172A]; }
+  ::-webkit-scrollbar-thumb { @apply bg-[#334155] rounded-full hover:bg-[#475569]; }
+  *:focus-visible { @apply outline-none ring-2 ring-[#22C55E] ring-offset-2 ring-offset-[#020617]; }
 }
 
 @layer components {
-  .card { @apply bg-dark-800 border border-dark-700 rounded-xl p-6; }
-  .btn-primary { @apply bg-primary-600 hover:bg-primary-500 text-white px-4 py-2 rounded-lg font-medium transition-colors; }
-  .btn-secondary { @apply bg-dark-700 hover:bg-dark-600 text-white px-4 py-2 rounded-lg font-medium transition-colors; }
-  .btn-danger { @apply bg-red-600 hover:bg-red-500 text-white px-4 py-2 rounded-lg font-medium transition-colors; }
-  .input { @apply bg-dark-700 border border-dark-600 rounded-lg px-4 py-2 text-white focus:outline-none focus:ring-2 focus:ring-primary-500 w-full; }
-  .label { @apply text-sm text-dark-300 font-medium; }
-  .stat-card { @apply bg-dark-800 border border-dark-700 rounded-xl p-5 flex flex-col; }
-  .table-header { @apply bg-dark-800 text-dark-300 text-sm font-medium text-left p-3 border-b border-dark-700; }
-  .table-cell { @apply p-3 border-b border-dark-700/50; }
-  .sidebar-link { @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-dark-300 hover:bg-dark-700 hover:text-white transition-colors text-sm; }
-  .sidebar-link.active { @apply bg-primary-600/20 text-primary-400 border-l-2 border-primary-500; }
-  .badge { @apply inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium; }
-  .badge-green { @apply bg-green-500/20 text-green-400; }
-  .badge-yellow { @apply bg-yellow-500/20 text-yellow-400; }
-  .badge-red { @apply bg-red-500/20 text-red-400; }
-  .badge-blue { @apply bg-blue-500/20 text-blue-400; }
+  .card {
+    @apply bg-[#111827] border border-[#1e293b] rounded-xl p-6 transition-all duration-200;
+  }
+  .card:hover {
+    @apply border-[#334155];
+  }
+  .card-hover {
+    @apply hover:border-[#334155] hover:shadow-lg hover:shadow-black/20 transition-all duration-200;
+  }
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg font-medium text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#22C55E] focus-visible:ring-offset-2 focus-visible:ring-offset-[#020617] disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  .btn-primary {
+    @apply btn bg-[#22C55E] text-white hover:bg-[#16A34A] active:bg-[#15803D];
+  }
+  .btn-secondary {
+    @apply btn bg-[#1e293b] text-white hover:bg-[#334155] active:bg-[#475569] border border-[#334155];
+  }
+  .btn-ghost {
+    @apply btn bg-transparent text-[#94A3B8] hover:bg-[#1e293b] hover:text-white;
+  }
+  .btn-danger {
+    @apply btn bg-red-600/20 text-red-400 hover:bg-red-600/30 hover:text-red-300 border border-red-600/30;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  .input {
+    @apply w-full bg-[#0F172A] border border-[#1e293b] rounded-lg px-4 py-2.5 text-white text-sm placeholder:text-[#64748B] transition-all duration-200 focus:outline-none focus:border-[#22C55E] focus:ring-1 focus:ring-[#22C55E]/50;
+  }
+  .input-error {
+    @apply border-red-500/50 focus:border-red-500 focus:ring-red-500/50;
+  }
+  .label {
+    @apply block text-sm font-medium text-[#94A3B8] mb-1.5;
+  }
+  .select {
+    @apply input appearance-none cursor-pointer;
+  }
+  .textarea {
+    @apply input min-h-[100px] resize-y;
+  }
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  .badge-green {
+    @apply bg-[#22C55E]/20 text-[#22C55E] border border-[#22C55E]/30;
+  }
+  .badge-yellow {
+    @apply bg-yellow-500/20 text-yellow-400 border border-yellow-500/30;
+  }
+  .badge-red {
+    @apply bg-red-500/20 text-red-400 border border-red-500/30;
+  }
+  .badge-blue {
+    @apply bg-blue-500/20 text-blue-400 border border-blue-500/30;
+  }
+  .badge-gray {
+    @apply bg-[#334155]/50 text-[#94A3B8] border border-[#475569]/30;
+  }
+  .stat-card {
+    @apply bg-[#111827] border border-[#1e293b] rounded-xl p-5 flex flex-col gap-1 transition-all duration-200 hover:border-[#334155] hover:shadow-lg hover:shadow-black/20;
+  }
+  .table-wrap {
+    @apply overflow-x-auto rounded-lg border border-[#1e293b];
+  }
+  .table-header {
+    @apply bg-[#0F172A] text-[#94A3B8] text-xs font-semibold uppercase tracking-wider text-left px-4 py-3 border-b border-[#1e293b];
+  }
+  .table-cell {
+    @apply px-4 py-3 border-b border-[#1e293b]/50 text-sm;
+  }
+  .table-row {
+    @apply hover:bg-[#0F172A]/50 transition-colors;
+  }
+  .sidebar-link {
+    @apply flex items-center gap-3 px-4 py-2.5 rounded-lg text-[#94A3B8] hover:bg-[#1e293b] hover:text-white transition-all duration-200 text-sm font-medium;
+  }
+  .sidebar-link.active {
+    @apply bg-[#22C55E]/10 text-[#22C55E] border-l-2 border-[#22C55E];
+  }
+  .page-header {
+    @apply flex items-center justify-between mb-8;
+  }
+  .page-title {
+    @apply text-2xl font-bold text-white tracking-tight;
+  }
+  .page-subtitle {
+    @apply text-sm text-[#94A3B8] mt-1;
+  }
+  .divider {
+    @apply border-t border-[#1e293b] my-6;
+  }
+  .skeleton {
+    @apply bg-[#1e293b] rounded animate-pulse;
+  }
+  .empty-state {
+    @apply flex flex-col items-center justify-center py-16 text-center;
+  }
+  .empty-state-icon {
+    @apply w-16 h-16 rounded-full bg-[#1e293b] flex items-center justify-center mb-4;
+  }
+}
+
+@layer utilities {
+  .text-gradient {
+    @apply bg-gradient-to-r from-[#22C55E] to-[#16A34A] bg-clip-text text-transparent;
+  }
+  .glass {
+    @apply bg-[#0F172A]/80 backdrop-blur-xl border-b border-[#1e293b];
+  }
+  .line-clamp-1 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 1; }
+  .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+  .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
 }
