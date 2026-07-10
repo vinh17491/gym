@@ -18,6 +18,7 @@ export default function MarketingHeader() {
 
   const links = [
     { to: '/', label: 'Home' },
+    { to: '/products', label: 'Shop' },
     { to: '/exercises', label: 'Exercises' },
     { to: '/coaches', label: 'Coaches' },
     { to: '/videos', label: 'Videos' },
@@ -26,7 +27,9 @@ export default function MarketingHeader() {
     { to: '/about', label: 'About' },
   ];
 
-  const isActive = (path: string) => location.pathname === path;
+  const isActive = (path: string) => path === '/products'
+    ? location.pathname === '/products' || location.pathname.startsWith('/products/')
+    : location.pathname === path;
 
   return (
     <motion.header

@@ -7,7 +7,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "eslint src --ext .ts"
+    "lint": "eslint src --ext .ts",
+    "db:migrate": "tsx src/scripts/migrate.ts",
+    "db:migrate:status": "tsx src/scripts/migrate.ts --status"
   },
   "dependencies": {
     "@types/csurf": "^1.11.5",

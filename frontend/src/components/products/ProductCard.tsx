@@ -3,45 +3,22 @@ import { motion } from 'framer-motion';
 import { ShoppingCart, Heart, Star, Zap } from 'lucide-react';
 import { useProductsStore } from '../../stores/productsStore';
 import { formatCurrency } from '../../lib/utils';
+import type { Product } from '../../types/product';
 
 interface ProductCardProps {
-  product: {
-    id: number;
-    product_name?: string;
-    name?: string;
-    price: number;
-    sale_price?: number;
-    original_price?: number;
-    main_image?: string;
-    rating?: number;
-    review_count?: number;
-    slug?: string;
-    is_featured?: boolean;
-    is_on_sale?: boolean;
-    brand?: string;
-    brand_name?: string;
-    category?: string;
-    category_name?: string;
-    category_slug?: string;
-    weight?: number;
-    flavor?: string;
-    color?: string;
-    size?: string;
-    tags?: string;
-    stock?: number;
-  };
+  product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
   const { addToCart, toggleWishlist, isInWishlist } = useProductsStore();
-  const name = product.product_name || product.name || '';
-  const brand = product.brand || product.brand_name || '';
-  const hasDiscount = product.sale_price && product.sale_price < product.price;
-  const discountPercent = hasDiscount ? Math.round((1 - product.sale_price! / product.price) * 100) : 0;
+  const name = product.product_name;
+  const brand = product.brand || '';
+  const variant = product.display_variant;
+  const hasDiscount = variant.sale_price != null && variant.sale_price < variant.price;
+  const discountPercent = hasDiscount ? Math.round((1 - variant.sale_price! / variant.price) * 100) : 0;
   const wishlisted = isInWishlist(product.id);
-  const outOfStock = product.stock !== undefined && product.stock === 0;
+  const outOfStock = variant.available <= 0;
   const isNew = product.is_on_sale === false && !hasDiscount && !product.is_featured;
-  const displayPrice = hasDiscount ? product.sale_price! : product.price;
 
   return (
     <motion.div
@@ -54,7 +31,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Image Container */}
       <Link to={`/products/${product.slug || product.id}`} className="block relative overflow-hidden aspect-[4/5]">
         <img
-          src={product.main_image || '/placeholder-product.png'}
+          src={product.primary_image?.image_url || '/placeholder-product.png'}
           alt={name}
           className={`w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110 ${outOfStock ? 'opacity-40 grayscale' : ''}`}
           onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-product.png'; }}
@@ -107,28 +84,18 @@ export default function ProductCard({ product }: ProductCardProps) {
         </Link>
 
         {/* Variant Chips */}
-        {(product.weight || product.flavor || product.color || product.size) && (
+        {(variant.weight || variant.options.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
-            {product.weight && (
+            {variant.weight && (
               <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-dark-800/80 text-dark-300 border border-dark-700/50">
-                {product.weight}lb
+                {variant.weight}lb
               </span>
             )}
-            {product.flavor && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-purple-900/30 text-purple-300 border border-purple-500/20">
-                {product.flavor}
+            {variant.options.map(option => (
+              <span key={`${option.option_id}-${option.value_id}`} className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-900/30 text-emerald-300 border border-emerald-500/20">
+                {option.option_name}: {option.value}
               </span>
-            )}
-            {product.color && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-sky-900/30 text-sky-300 border border-sky-500/20">
-                {product.color}
-              </span>
-            )}
-            {product.size && (
-              <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-emerald-900/30 text-emerald-300 border border-emerald-500/20">
-                {product.size}
-              </span>
-            )}
+            ))}
           </div>
         )}
 
@@ -138,15 +105,15 @@ export default function ProductCard({ product }: ProductCardProps) {
             {hasDiscount ? (
               <div className="flex items-baseline gap-2">
                 <span className="text-lg font-extrabold text-orange-400">
-                  {formatCurrency(product.sale_price!)}
+                  {formatCurrency(variant.effective_price)}
                 </span>
                 <span className="text-xs text-dark-400 line-through">
-                  {formatCurrency(product.price)}
+                  {formatCurrency(variant.price)}
                 </span>
               </div>
             ) : (
               <span className="text-lg font-extrabold text-white">
-                {formatCurrency(product.price)}
+                {formatCurrency(variant.effective_price)}
               </span>
             )}
           </div>

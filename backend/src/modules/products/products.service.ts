@@ -7,79 +7,276 @@ export interface ProductListResult {
   total: number;
 }
 
+export interface ProductListParams {
+  search?: string;
+  category?: string;
+  brand?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  inStock?: boolean;
+  featured?: boolean;
+  saleOnly?: boolean;
+  page: number;
+  limit: number;
+  sort?: string;
+}
+
+const displayVariantApply = `
+CROSS APPLY (
+  SELECT TOP (1)
+    v.id, v.product_id, v.variant_name, v.sku, v.barcode, v.price, v.sale_price,
+    CASE WHEN v.sale_price IS NOT NULL AND v.sale_price < v.price THEN v.sale_price ELSE v.price END AS effective_price,
+    v.weight, v.is_active, i.available
+  FROM dbo.ProductVariants v
+  JOIN dbo.Inventory i ON i.variant_id = v.id
+  WHERE v.product_id = p.id AND v.is_active = 1
+  ORDER BY CASE WHEN v.variant_name = N'Default' THEN 0 ELSE 1 END, v.id
+) dv`;
+
+const joins = `
+LEFT JOIN dbo.Brands b ON p.brand_id = b.id
+LEFT JOIN dbo.Categories c ON p.category_id = c.id
+${displayVariantApply}
+OUTER APPLY (
+  SELECT TOP (1) pi.id, pi.image_url, pi.is_primary, pi.sort_order
+  FROM dbo.ProductImages pi
+  WHERE pi.product_id = p.id
+  ORDER BY pi.is_primary DESC, pi.sort_order ASC, pi.id ASC
+) primary_image`;
+
+function bindListParams(request: any, params: ProductListParams) {
+  if (params.search) request.input('search', `%${params.search}%`);
+  if (params.category) request.input('category', params.category);
+  if (params.brand) request.input('brand', params.brand);
+  if (params.minPrice !== undefined) request.input('minPrice', params.minPrice);
+  if (params.maxPrice !== undefined) request.input('maxPrice', params.maxPrice);
+}
+
+function buildWhere(params: ProductListParams) {
+  const clauses = ['p.is_active = 1'];
+  if (params.search) clauses.push('(p.product_name LIKE @search OR b.name LIKE @search)');
+  if (params.category) clauses.push('c.slug = @category');
+  if (params.brand) clauses.push('b.slug = @brand');
+  if (params.minPrice !== undefined) clauses.push('dv.effective_price >= @minPrice');
+  if (params.maxPrice !== undefined) clauses.push('dv.effective_price <= @maxPrice');
+  if (params.inStock) clauses.push('dv.available > 0');
+  if (params.featured) clauses.push('p.is_featured = 1');
+  if (params.saleOnly) clauses.push('dv.sale_price IS NOT NULL AND dv.sale_price < dv.price');
+  return `WHERE ${clauses.join(' AND ')}`;
+}
+
+function mapProduct(row: any): any {
+  const displayVariant = {
+    id: row.variant_id,
+    product_id: row.id,
+    variant_name: row.variant_name,
+    sku: row.variant_sku,
+    barcode: row.variant_barcode ?? null,
+    price: row.variant_price,
+    sale_price: row.variant_sale_price ?? null,
+    effective_price: row.effective_price,
+    weight: row.variant_weight ?? null,
+    is_active: Boolean(row.variant_is_active),
+    available: row.variant_available,
+    options: []
+  };
+  const primaryImage = row.image_id == null ? null : {
+    id: row.image_id,
+    image_url: row.image_url,
+    is_primary: Boolean(row.image_is_primary),
+    sort_order: row.image_sort_order
+  };
+  return {
+    id: row.id,
+    product_name: row.product_name,
+    slug: row.slug,
+    description: row.description ?? null,
+    short_description: row.short_description ?? row.description ?? null,
+    specifications: row.specifications ?? null,
+    brand: row.brand ?? null,
+    brand_slug: row.brand_slug ?? null,
+    category: row.category ?? null,
+    category_slug: row.category_slug ?? null,
+    is_active: Boolean(row.is_active),
+    is_featured: Boolean(row.is_featured),
+    is_on_sale: Boolean(row.is_on_sale),
+    created_at: row.created_at,
+    display_variant: displayVariant,
+    primary_image: primaryImage,
+    images: primaryImage ? [primaryImage] : [],
+    // Temporary compatibility aliases; all are derived from canonical tables.
+    price: displayVariant.price,
+    sale_price: displayVariant.sale_price,
+    stock: displayVariant.available,
+    sku: displayVariant.sku,
+    main_image: row.image_url ?? null,
+    additional_images: null
+  };
+}
+
+function attachImages(product: any, imageRows: any[]) {
+  const images = imageRows.map((image: any) => ({
+    id: image.id,
+    image_url: image.image_url,
+    is_primary: Boolean(image.is_primary),
+    sort_order: image.sort_order
+  }));
+  product.images = images;
+  product.primary_image = images[0] ?? null;
+  product.main_image = images[0]?.image_url ?? null;
+  product.additional_images = images
+    .filter((image: any) => !image.is_primary)
+    .map((image: any) => image.image_url)
+    .join(',') || null;
+  return product;
+}
+
+const productSelect = `
+SELECT p.id, p.product_name, p.slug, p.description, p.description AS short_description,
+  p.specifications, p.is_active, p.is_featured, p.is_on_sale, p.created_at,
+  b.name AS brand, b.slug AS brand_slug, c.name AS category, c.slug AS category_slug,
+  dv.id AS variant_id, dv.variant_name, dv.sku AS variant_sku, dv.barcode AS variant_barcode,
+  dv.price AS variant_price, dv.sale_price AS variant_sale_price,
+  dv.effective_price, dv.weight AS variant_weight, dv.is_active AS variant_is_active,
+  dv.available AS variant_available,
+  primary_image.id AS image_id, primary_image.image_url,
+  primary_image.is_primary AS image_is_primary, primary_image.sort_order AS image_sort_order
+FROM dbo.Products p
+${joins}`;
+
 export const productsService = {
-  async list(params: {
-    search?: string; category?: string; brand?: string;
-    page: number; limit: number; sort?: string;
-  }): Promise<ProductListResult> {
+  async list(params: ProductListParams): Promise<ProductListResult> {
     const pool = await getPool();
-    const req = pool.request();
-    let where = 'WHERE p.is_active = 1';
-    if (params.search) {
-      where += ' AND (p.product_name LIKE @search OR b.name LIKE @search2)';
-      req.input('search', `%${params.search}%`);
-      req.input('search2', `%${params.search}%`);
-    }
-    if (params.category) {
-      where += ' AND c.slug = @cat';
-      req.input('cat', params.category);
-    }
-    if (params.brand) {
-      where += ' AND b.slug = @brand';
-      req.input('brand', params.brand);
-    }
-
+    const where = buildWhere(params);
     let order = 'ORDER BY p.id DESC';
-    if (params.sort === 'price_asc') order = 'ORDER BY p.price ASC';
-    else if (params.sort === 'price_desc') order = 'ORDER BY p.price DESC';
-    else if (params.sort === 'name') order = 'ORDER BY p.product_name ASC';
+    if (params.sort === 'price_asc') order = 'ORDER BY dv.effective_price ASC, p.id ASC';
+    else if (params.sort === 'price_desc') order = 'ORDER BY dv.effective_price DESC, p.id ASC';
+    else if (params.sort === 'name') order = 'ORDER BY p.product_name ASC, p.id ASC';
     else if (params.sort === 'featured') order = 'ORDER BY p.is_featured DESC, p.id DESC';
-    else if (params.sort === 'newest') order = 'ORDER BY p.created_at DESC';
-    else if (params.sort === 'sale') where += ' AND p.is_on_sale = 1';
+    else if (params.sort === 'newest') order = 'ORDER BY p.created_at DESC, p.id DESC';
 
-    const offset = (params.page - 1) * params.limit;
-    const countResult = await req.query(
-      `SELECT COUNT(*) as total FROM Products p LEFT JOIN Brands b ON p.brand_id=b.id LEFT JOIN Categories c ON p.category_id=c.id ${where}`
+    const countRequest = pool.request();
+    bindListParams(countRequest, params);
+    const countResult = await countRequest.query(
+      `SELECT COUNT(*) AS total FROM dbo.Products p ${joins} ${where}`
     );
-    const total = countResult.recordset[0].total;
 
-    const dataReq = pool.request();
-    if (params.search) {
-      dataReq.input('search', `%${params.search}%`);
-      dataReq.input('search2', `%${params.search}%`);
+    const dataRequest = pool.request();
+    bindListParams(dataRequest, params);
+    dataRequest.input('offset', (params.page - 1) * params.limit);
+    dataRequest.input('limit', params.limit);
+    const dataResult = await dataRequest.query(
+      `${productSelect} ${where} ${order} OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`
+    );
+
+    const products = dataResult.recordset.map(mapProduct);
+    if (products.length > 0) {
+      const imageRequest = pool.request();
+      const productIdParams = products.map((product: any, index: number) => {
+        const name = `productId${index}`;
+        imageRequest.input(name, product.id);
+        return `@${name}`;
+      });
+      const imageResult = await imageRequest.query(`
+        SELECT id, product_id, image_url, is_primary, sort_order
+        FROM dbo.ProductImages
+        WHERE product_id IN (${productIdParams.join(', ')})
+        ORDER BY product_id, is_primary DESC, sort_order ASC, id ASC`);
+      const imagesByProduct = new Map<number, any[]>();
+      for (const image of imageResult.recordset) {
+        const images = imagesByProduct.get(image.product_id) || [];
+        images.push(image);
+        imagesByProduct.set(image.product_id, images);
+      }
+      for (const product of products) attachImages(product, imagesByProduct.get(product.id) || []);
     }
-    if (params.category) dataReq.input('cat', params.category);
-    if (params.brand) dataReq.input('brand', params.brand);
-    const dataResult = await dataReq.query(
-      `SELECT p.id, p.product_name, p.slug, p.price, p.sale_price, p.stock, p.description as short_description, p.main_image, p.is_active, b.name as brand, c.name as category, c.slug as category_slug, p.created_at FROM Products p LEFT JOIN Brands b ON p.brand_id=b.id LEFT JOIN Categories c ON p.category_id=c.id ${where} ${order} OFFSET ${offset} ROWS FETCH NEXT ${params.limit} ROWS ONLY`
-    );
-    return { products: dataResult.recordset, page: params.page, limit: params.limit, total };
+
+    return {
+      products,
+      page: params.page,
+      limit: params.limit,
+      total: countResult.recordset[0].total
+    };
   },
 
   async getBySlug(slug: string) {
+    return this.getDetail('p.slug = @lookup', slug);
+  },
+
+  async getById(id: number) {
+    return this.getDetail('p.id = @lookup', id);
+  },
+
+  async getDetail(predicate: string, lookup: string | number) {
     const pool = await getPool();
-    const result = await pool.request()
-      .input('slug', slug)
-      .query(
-        `SELECT p.id, p.product_name, p.slug, p.price, p.sale_price, p.stock, p.description, p.specifications, p.main_image, p.gallery_images as additional_images, p.is_active, p.is_featured, p.is_on_sale, p.flavor, p.color, p.size, p.weight, b.name as brand, b.slug as brand_slug, c.name as category, c.slug as category_slug, p.created_at FROM Products p LEFT JOIN Brands b ON p.brand_id=b.id LEFT JOIN Categories c ON p.category_id=c.id WHERE p.slug = @slug AND p.is_active = 1`
-      );
-    return result.recordset[0] || null;
+    const baseResult = await pool.request().input('lookup', lookup).query(
+      `${productSelect} WHERE ${predicate} AND p.is_active = 1`
+    );
+    if (!baseResult.recordset[0]) return null;
+
+    const product = mapProduct(baseResult.recordset[0]);
+    const productId = product.id;
+    const [imagesResult, variantsResult, optionsResult] = await Promise.all([
+      pool.request().input('productId', productId).query(`
+        SELECT id, image_url, is_primary, sort_order
+        FROM dbo.ProductImages
+        WHERE product_id = @productId
+        ORDER BY is_primary DESC, sort_order ASC, id ASC`),
+      pool.request().input('productId', productId).query(`
+        SELECT v.id, v.product_id, v.variant_name, v.sku, v.barcode, v.price, v.sale_price,
+          CASE WHEN v.sale_price IS NOT NULL AND v.sale_price < v.price THEN v.sale_price ELSE v.price END AS effective_price,
+          v.weight, v.is_active, i.available
+        FROM dbo.ProductVariants v
+        JOIN dbo.Inventory i ON i.variant_id = v.id
+        WHERE v.product_id = @productId AND v.is_active = 1
+        ORDER BY CASE WHEN v.variant_name = N'Default' THEN 0 ELSE 1 END, v.id`),
+      pool.request().input('productId', productId).query(`
+        SELECT vov.variant_id, po.id AS option_id, po.name AS option_name,
+          pov.id AS value_id, pov.value
+        FROM dbo.VariantOptionValues vov
+        JOIN dbo.ProductVariants v ON v.id = vov.variant_id
+        JOIN dbo.ProductOptions po ON po.id = vov.product_option_id
+        JOIN dbo.ProductOptionValues pov
+          ON pov.product_option_id = vov.product_option_id
+         AND pov.id = vov.product_option_value_id
+        WHERE v.product_id = @productId AND v.is_active = 1
+        ORDER BY vov.variant_id, po.sort_order, po.id, pov.sort_order, pov.id`)
+    ]);
+
+    const optionsByVariant = new Map<number, any[]>();
+    for (const option of optionsResult.recordset) {
+      const options = optionsByVariant.get(option.variant_id) || [];
+      options.push({
+        option_id: option.option_id,
+        option_name: option.option_name,
+        value_id: option.value_id,
+        value: option.value
+      });
+      optionsByVariant.set(option.variant_id, options);
+    }
+    const variants = variantsResult.recordset.map((variant: any) => ({
+      ...variant,
+      is_active: Boolean(variant.is_active),
+      sale_price: variant.sale_price ?? null,
+      barcode: variant.barcode ?? null,
+      weight: variant.weight ?? null,
+      options: optionsByVariant.get(variant.id) || []
+    }));
+    const images = imagesResult.recordset.map((image: any) => ({
+      ...image,
+      is_primary: Boolean(image.is_primary)
+    }));
+    product.variants = variants;
+    product.display_variant = variants.find((variant: any) => variant.id === product.display_variant.id);
+    return attachImages(product, images);
   },
 
   async getFilters() {
     const pool = await getPool();
-    const categories = await pool.request().query('SELECT slug, name FROM Categories WHERE is_active=1 ORDER BY name');
-    const brands = await pool.request().query('SELECT slug, name FROM Brands WHERE is_active=1 ORDER BY name');
+    const [categories, brands] = await Promise.all([
+      pool.request().query('SELECT slug, name FROM dbo.Categories WHERE is_active = 1 ORDER BY name'),
+      pool.request().query('SELECT slug, name FROM dbo.Brands WHERE is_active = 1 ORDER BY name')
+    ]);
     return { categories: categories.recordset, brands: brands.recordset };
-  },
-
-  async getById(id: number) {
-    const pool = await getPool();
-    const result = await pool.request()
-      .input('id', id)
-      .query(
-        `SELECT p.id, p.product_name, p.slug, p.price, p.sale_price, p.stock, p.description, p.specifications, p.main_image, p.gallery_images as additional_images, p.is_active, p.is_featured, p.is_on_sale, p.flavor, p.color, p.size, p.weight, b.name as brand, b.slug as brand_slug, c.name as category, c.slug as category_slug, p.created_at FROM Products p LEFT JOIN Brands b ON p.brand_id=b.id LEFT JOIN Categories c ON p.category_id=c.id WHERE p.id = @id AND p.is_active = 1`
-      );
-    return result.recordset[0] || null;
   }
 };

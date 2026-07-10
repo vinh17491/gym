@@ -1,0 +1,73 @@
+export interface ProductImage {
+  id: number;
+  image_url: string;
+  is_primary: boolean;
+  sort_order: number;
+}
+
+export interface ProductVariantOption {
+  option_id: number;
+  option_name: string;
+  value_id: number;
+  value: string;
+}
+
+export interface ProductVariant {
+  id: number;
+  product_id: number;
+  variant_name: string;
+  sku: string;
+  barcode?: string | null;
+  price: number;
+  sale_price?: number | null;
+  effective_price: number;
+  weight?: number | null;
+  is_active: boolean;
+  available: number;
+  options: ProductVariantOption[];
+}
+
+export interface Product {
+  id: number;
+  product_name: string;
+  slug: string;
+  description?: string | null;
+  short_description?: string | null;
+  specifications?: Record<string, unknown> | string | null;
+  brand?: string | null;
+  brand_slug?: string | null;
+  category?: string | null;
+  category_slug?: string | null;
+  is_active?: boolean;
+  is_featured?: boolean;
+  is_on_sale?: boolean;
+  created_at?: string;
+  display_variant: ProductVariant;
+  variants?: ProductVariant[];
+  images?: ProductImage[];
+  primary_image?: ProductImage | null;
+
+  // Temporary compatibility aliases, derived by the API from canonical tables.
+  price: number;
+  sale_price?: number | null;
+  stock: number;
+  sku: string;
+  main_image?: string | null;
+  additional_images?: string | null;
+
+  rating?: number;
+  review_count?: number;
+  features?: string[];
+}
+
+export interface ProductListResponse {
+  success: boolean;
+  data: Product[];
+  pagination: { page: number; limit: number; total: number; pages: number };
+}
+
+export interface ProductDetailResponse {
+  success: boolean;
+  data: Product;
+  related_products?: Product[];
+}

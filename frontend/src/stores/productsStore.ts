@@ -1,21 +1,6 @@
 import { create } from 'zustand';
 import api from '../api/axios';
-
-interface Product {
-  id: number;
-  name: string;
-  price: number;
-  sale_price?: number;
-  main_image?: string;
-  rating?: number;
-  review_count?: number;
-  slug?: string;
-  is_featured?: boolean;
-  is_on_sale?: boolean;
-  brand_name?: string;
-  category_name?: string;
-  description?: string;
-}
+import type { Product, ProductDetailResponse } from '../types/product';
 
 interface CartItem {
   productId: number;
@@ -118,24 +103,21 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
       saveToStorage(CART_KEY, updated);
     } else {
       try {
-        const res = await api.get(`/products/${productId}`);
+        const res = await api.get<ProductDetailResponse>(`/products/${productId}`);
         const p = res.data.data;
         const newItem: CartItem = {
           productId, quantity,
-          name: p.name || p.product_name,
-          price: p.sale_price || p.price,
-          sale_price: p.sale_price,
+          name: p.product_name,
+          price: p.display_variant.effective_price,
+          sale_price: p.display_variant.sale_price ?? undefined,
           main_image: p.main_image,
-          stock: p.stock || 99,
+          stock: p.display_variant.available,
         };
         const updated = [...cartItems, newItem];
         set({ cartItems: updated });
         saveToStorage(CART_KEY, updated);
       } catch {
-        const newItem: CartItem = { productId, quantity, name: 'Product', price: 0, stock: 99 };
-        const updated = [...cartItems, newItem];
-        set({ cartItems: updated });
-        saveToStorage(CART_KEY, updated);
+        set({ error: 'Failed to load canonical product availability' });
       }
     }
   },

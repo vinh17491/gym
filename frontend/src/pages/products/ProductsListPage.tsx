@@ -5,13 +5,7 @@ import api from '../../api/axios';
 import ProductCard from '../../components/products/ProductCard';
 import ProductFilters from '../../components/products/ProductFilters';
 import ProductSearchBar from '../../components/products/ProductSearchBar';
-
-interface Product {
-  id: number; name: string; price: number; sale_price?: number; original_price?: number;
-  main_image: string; rating: number; review_count: number; slug: string; stock: number;
-  brand_name: string; category_name: string; category_slug: string; is_featured: boolean;
-  is_new?: boolean; is_on_sale?: boolean; weight?: number; flavor?: string; color?: string; size?: string; tags?: string;
-}
+import type { Product, ProductListResponse } from '../../types/product';
 
 interface Filters {
   category: string; minPrice: number; maxPrice: number; brand: string;
@@ -66,7 +60,7 @@ export default function ProductsListPage() {
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
 
-      const response = await api.get(`/products?${params.toString()}`);
+      const response = await api.get<ProductListResponse>(`/products?${params.toString()}`);
       setProducts(response.data.data || []);
       setPagination(response.data.pagination || pagination);
       setError(null);

@@ -5,51 +5,17 @@ import {
   ShoppingCart, Heart, Star, ZoomIn, ChevronLeft, ChevronRight,
   Shield, Truck, RefreshCw, CheckCircle, X, Minus, Plus, StarHalf
 } from 'lucide-react';
-import { cn } from '../../lib/utils';
+import { cn, formatCurrency } from '../../lib/utils';
 import api from '../../api/axios';
 import { useAuthStore } from '../../stores/authStore';
 import { useProductsStore } from '../../stores/productsStore';
+import type { Product, ProductDetailResponse, ProductImage } from '../../types/product';
 
 /* ──────────────────────────────── Types ──────────────────────────────── */
-interface Product {
-  id: number;
-  product_name: string;
-  name?: string;
-  price: number;
-  sale_price?: number;
-  original_price?: number;
-  main_image: string;
-  additional_images?: string;
-  description: string;
-  specifications: Record<string, any>;
-  features?: string[];
-  sku: string;
-  stock: number;
-  rating: number;
-  review_count: number;
-  slug: string;
-  brand_name?: string;
-  category_name?: string;
-  category_slug?: string;
-  is_on_sale?: boolean;
-  is_featured: boolean;
-  is_sale?: boolean;
-  flavor?: string;
-  color?: string;
-  size?: string;
-  weight?: string;
-  source_url?: string;
-  created_at?: string;
-  updated_at?: string;
-}
-
 /* ──────────────────────────────── Helpers ──────────────────────────────── */
-const formatPrice = (p: number) =>
-  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
-
 const discountPct = (p: Product) =>
-  p.sale_price && p.price
-    ? Math.round(((p.price - p.sale_price) / p.price) * 100)
+  p.display_variant.sale_price != null && p.display_variant.sale_price < p.display_variant.price
+    ? Math.round(((p.display_variant.price - p.display_variant.sale_price) / p.display_variant.price) * 100)
     : 0;
 
 /* ──────────────────────────────── Sub-components ──────────────────────────────── */
@@ -70,8 +36,8 @@ const Stars = ({ rating, size = 16 }: { rating: number; size?: number }) => {
 };
 
 /* Image Gallery – thumbnails, zoom, lightbox */
-const ImageGallery = ({ main_image, additional_images }: { main_image: string; additional_images?: string }) => {
-  const allImages = [main_image, ...(additional_images ? additional_images.split(',').map(s => s.trim()).filter(Boolean) : [])];
+const ImageGallery = ({ images }: { images: ProductImage[] }) => {
+  const allImages = images.map(image => image.image_url);
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -285,7 +251,7 @@ const FBTItem = ({ p, checked, onToggle }: { p: Product; checked: boolean; onTog
     <img src={p.main_image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
-      <p className="text-xs text-gray-400 font-body">{p.sale_price ? formatPrice(p.sale_price) : formatPrice(p.price)}</p>
+      <p className="text-xs text-gray-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
     </div>
   </label>
 );
@@ -393,9 +359,7 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [activeTab, setActiveTab] = useState('description');
   const [addedToCart, setAddedToCart] = useState(false);
-  const [selectedFlavor, setSelectedFlavor] = useState('');
-  const [selectedSize, setSelectedSize] = useState('');
-  const [selectedColor, setSelectedColor] = useState('');
+  const [fbtChecked, setFbtChecked] = useState<boolean[]>([]);
 
   const { isAuthenticated } = useAuthStore();
   const { addToCart, toggleWishlist, isInWishlist } = useProductsStore();
@@ -404,7 +368,7 @@ export default function ProductDetailPage() {
   const fetchProduct = useCallback(async () => {
     try {
       setLoading(true);
-      const res = await api.get(`/products/${id}`);
+      const res = await api.get<ProductDetailResponse>(`/products/${id}`);
       const p = res.data.data || null;
       setProduct(p);
       setRelatedProducts(res.data.related_products || []);
@@ -475,35 +439,24 @@ export default function ProductDetailPage() {
     
     const p = product;
     const isOnSale = Boolean(
-    p.sale_price != null && p.sale_price < p.price
+    p.display_variant.sale_price != null && p.display_variant.sale_price < p.display_variant.price
     );
     const discPct = discountPct(p);
-    const parseOptions = (value?: string) =>
-    value
-    ? value
-        .split(',')
-        .map(item => item.trim())
-        .filter(Boolean)
-    : [];
-    const flavorOptions = parseOptions(p.flavor);
-    const sizeOptions = parseOptions(p.size);
-    const colorOptions = parseOptions(p.color);
     const sampleReviews: Array<{
     user: string;
     rating: number;
     date: string;
     comment: string;
     }> = [];
-    const [fbtChecked, setFbtChecked] = useState<boolean[]>([]);
     const fbtProducts = relatedProducts.slice(0, 2);
     const fbtTotal =
-    (p.sale_price ?? p.price) +
+    p.display_variant.effective_price +
     fbtProducts.reduce(
       (total, item, index) =>
         total +
         (
           fbtChecked[index]
-           ? item.sale_price ?? item.price
+           ? item.display_variant.effective_price
             : 0
        ),
       0
@@ -529,9 +482,9 @@ export default function ProductDetailPage() {
           <span className="text-gray-600">/</span>
           <Link to="/products" className="text-gray-500 hover:text-white transition-colors">Products</Link>
           <span className="text-gray-600">/</span>
-          {p.category_name && (
+          {p.category && (
             <>
-              <Link to={`/products?category=${p.category_slug || ''}`} className="text-gray-500 hover:text-white transition-colors">{p.category_name}</Link>
+              <Link to={`/products?category=${p.category_slug || ''}`} className="text-gray-500 hover:text-white transition-colors">{p.category}</Link>
               <span className="text-gray-600">/</span>
             </>
           )}
@@ -547,7 +500,7 @@ export default function ProductDetailPage() {
             transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
             className="lg:col-span-7"
           >
-            <ImageGallery main_image={p.main_image} additional_images={p.additional_images} />
+            <ImageGallery images={p.images || []} />
           </motion.div>
 
           {/* ─── Product Info ──── lg:col-span-5 ~42% */}
@@ -559,15 +512,15 @@ export default function ProductDetailPage() {
           >
             <div className="space-y-5">
               {/* Brand */}
-              {p.brand_name && (
+              {p.brand && (
                 <span className="inline-block text-orange-400 uppercase tracking-[0.2em] text-xs font-semibold font-body">
-                  {p.brand_name}
+                  {p.brand}
                 </span>
               )}
 
               {/* Product name */}
               <h1 className="text-3xl lg:text-4xl font-bold text-white leading-tight font-heading">
-                {p.name || p.product_name}
+                {p.product_name}
               </h1>
 
               {/* Rating */}
@@ -582,11 +535,11 @@ export default function ProductDetailPage() {
               {/* Price */}
               <div className="flex items-end gap-3">
                 <span className="text-4xl font-bold text-white font-heading">
-                  {formatPrice(p.sale_price ?? p.price)}
+                  {formatCurrency(p.display_variant.effective_price)}
                 </span>
-                {isOnSale && p.sale_price != null && (
+                {isOnSale && p.display_variant.sale_price != null && (
                   <>
-                    <span className="text-xl text-gray-500 line-through font-body">{formatPrice(p.price)}</span>
+                    <span className="text-xl text-gray-500 line-through font-body">{formatCurrency(p.display_variant.price)}</span>
                     <span className="px-2.5 py-1 bg-green-500/15 text-green-400 text-xs font-bold rounded-lg font-body">
                       -{discPct}%
                     </span>
@@ -600,9 +553,11 @@ export default function ProductDetailPage() {
               </p>
 
               {/* Variant pills */}
-              <PillSelect label="Flavour" options={flavorOptions} value={selectedFlavor} onChange={setSelectedFlavor} />
-              <PillSelect label="Size" options={sizeOptions} value={selectedSize} onChange={setSelectedSize} />
-              <PillSelect label="Color" options={colorOptions} value={selectedColor} onChange={setSelectedColor} />
+              {p.display_variant.options.map(option => (
+                <div key={`${option.option_id}-${option.value_id}`} className="text-sm text-gray-300 font-body">
+                  <span className="text-gray-500">{option.option_name}:</span> {option.value}
+                </div>
+              ))}
 
               {/* Quantity + Add to cart */}
               <div className="flex items-center gap-4">
@@ -618,8 +573,8 @@ export default function ProductDetailPage() {
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity(q => Math.min(p.stock || 99, q + 1))}
-                    disabled={quantity >= (p.stock || 99)}
+                    onClick={() => setQuantity(q => Math.min(p.display_variant.available, q + 1))}
+                    disabled={quantity >= p.display_variant.available}
                     className="px-3 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
                     <Plus size={18} />
@@ -628,17 +583,17 @@ export default function ProductDetailPage() {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={p.stock <= 0}
+                  disabled={p.display_variant.available <= 0}
                   className={cn(
                     'flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 font-body',
-                    p.stock <= 0
+                    p.display_variant.available <= 0
                       ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
                       : addedToCart
                         ? 'bg-green-600 text-white'
                         : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98]'
                   )}
                 >
-                  {p.stock <= 0 ? (
+                  {p.display_variant.available <= 0 ? (
                     <>Out of Stock</>
                   ) : addedToCart ? (
                     <><CheckCircle size={20} /> Added!</>
@@ -662,11 +617,11 @@ export default function ProductDetailPage() {
 
               {/* Stock indicator */}
               <div className="flex items-center gap-2 text-sm font-body">
-                {p.stock > 0 ? (
-                  p.stock <= 5 ? (
+                {p.display_variant.available > 0 ? (
+                  p.display_variant.available <= 5 ? (
                     <span className="text-orange-400 flex items-center gap-1">
                       <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
-                      Only {p.stock} left in stock
+                      Only {p.display_variant.available} left in stock
                     </span>
                   ) : (
                     <span className="text-green-400 flex items-center gap-1">
@@ -680,7 +635,7 @@ export default function ProductDetailPage() {
                     Out of Stock
                   </span>
                 )}
-                {p.sku && <span className="text-gray-600 ml-auto">SKU: {p.sku}</span>}
+                {p.display_variant.sku && <span className="text-gray-600 ml-auto">SKU: {p.display_variant.sku}</span>}
               </div>
 
               {/* Trust badges */}
@@ -871,7 +826,7 @@ export default function ProductDetailPage() {
                   <img src={p.main_image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
-                    <p className="text-xs text-orange-400 font-body">{formatPrice(p.sale_price ?? p.price)}</p>
+                    <p className="text-xs text-orange-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
                   </div>
                 </div>
                 {fbtProducts.map((fp, i) => (
@@ -888,7 +843,7 @@ export default function ProductDetailPage() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
                 <div>
                   <p className="text-sm text-gray-400 font-body">Total price:</p>
-                  <p className="text-2xl font-bold text-white font-heading">{formatPrice(fbtTotal)}</p>
+                  <p className="text-2xl font-bold text-white font-heading">{formatCurrency(fbtTotal)}</p>
                 </div>
                 <button
                   onClick={() => {
@@ -940,7 +895,7 @@ export default function ProductDetailPage() {
                         {rp.product_name}
                       </h3>
                       <p className="text-base font-bold text-orange-400 mt-1 font-heading">
-                        {rp.sale_price ? formatPrice(rp.sale_price) : formatPrice(rp.price)}
+                        {formatCurrency(rp.display_variant.effective_price)}
                       </p>
                     </div>
                   </Link>
