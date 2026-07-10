@@ -40,5 +40,6 @@ export const config = {
     dir: process.env.BACKUP_DIR || './backups',
     retentionDays: parseInt(process.env.BACKUP_RETENTION_DAYS || '30'),
   },
-  cors: { origin: process.env.CORS_ORIGIN || 'http://localhost:5173' },
+  cors : { origin: process.env.CORS_ORIGIN || 'http://localhost:5173' },
+  redis: { url: process.env.REDIS_URL || 'redis://localhost:6379' },
 };

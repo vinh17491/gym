@@ -32,7 +32,7 @@ export async function getRevenueTrend(_req: Request, _res: Response, next: NextF
 
 export async function getMembershipSales(_req: Request, _res: Response, next: NextFunction) {
   try {
-    const r = await query("SELECT p.name as plan, COUNT(*) as count, SUM(pay.amount) as revenue FROM Payments pay JOIN Plans p ON pay.plan_id=p.id WHERE pay.status='completed' GROUP BY p.name");
+    const r = await query("SELECT p.name as plan_name, COUNT(*) as count, SUM(pay.amount) as revenue FROM Payments pay JOIN Plans p ON pay.plan_id=p.id WHERE pay.status='completed' GROUP BY p.name");
     sendSuccess(_res, r.recordset);
   } catch (err) { next(err); }
 }

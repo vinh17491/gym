@@ -1,114 +1,205 @@
-﻿import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
-import { motion } from 'framer-motion';
-import { LogIn, Mail, Lock, Eye, EyeOff } from 'lucide-react';
-import Input from '../../components/ui/input';
-import Button from '../../components/ui/button';
-import toast from 'react-hot-toast';
+import { Dumbbell, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 
 export default function LoginPage() {
-  const { login } = useAuthStore();
-  const navigate = useNavigate();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [touched, setTouched] = useState({ email: false, password: false });
+  
+  const navigate = useNavigate();
+  const location = useLocation();
+  const { login, isAuthenticated, user } = useAuthStore();
+
+  // Redirect after login - admin goes to /admin, others go to /dashboard
+  useEffect(() => {
+    if (isAuthenticated && user) {
+      const from = location.state?.from?.pathname;
+      if (from && from !== '/login') {
+        navigate(from, { replace: true });
+      } else if (user.role === 'admin') {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
+    }
+  }, [isAuthenticated, user, navigate, location]);
+
+  const validateEmail = (value: string) => {
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+    return emailRegex.test(value);
+  };
+
+  const validatePassword = (value: string) => {
+    return value.length >= 8;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    setError('');
+    
+    if (!validateEmail(email)) {
+      setError('Please enter a valid email address');
+      return;
+    }
+    
+    if (!validatePassword(password)) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+
+    setIsLoading(true);
+    
     try {
       await login(email, password);
-      navigate('/dashboard');
-      toast.success('Welcome back!');
     } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Invalid credentials');
+      const msg = err?.response?.data?.message || err?.message || 'Login failed. Please try again.';
+      setError(msg);
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex bg-dark-950">
-      {/* Left - Brand */}
-      <div className="hidden lg:flex w-1/2 bg-gradient-to-br from-dark-900 via-dark-850 to-dark-950 items-center justify-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-primary-600/10 via-transparent to-transparent" />
-        <div className="relative z-10 text-center max-w-md">
-          <div className="w-20 h-20 rounded-2xl bg-primary-600 flex items-center justify-center mx-auto mb-6 shadow-2xl shadow-primary-600/30">
-            <span className="text-white font-bold text-4xl">G</span>
-          </div>
-          <h1 className="text-4xl font-bold mb-2">Gymer</h1>
-          <p className="text-dark-400 text-lg">Enterprise Gym Management</p>
-          <div className="mt-8 flex justify-center gap-8">
-            <div><p className="text-2xl font-bold text-primary-400">500+</p><p className="text-xs text-dark-500">Members</p></div>
-            <div><p className="text-2xl font-bold text-primary-400">50+</p><p className="text-xs text-dark-500">Coaches</p></div>
-            <div><p className="text-2xl font-bold text-primary-400">10K+</p><p className="text-xs text-dark-500">Workouts</p></div>
-          </div>
-        </div>
-      </div>
-
-      {/* Right - Form */}
-      <div className="flex-1 flex items-center justify-center p-6">
-        <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="w-full max-w-sm">
-          <div className="text-center mb-8 lg:hidden">
-            <div className="w-14 h-14 rounded-xl bg-primary-600 flex items-center justify-center mx-auto mb-4">
-              <span className="text-white font-bold text-2xl">G</span>
+    <div className="min-h-screen bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#020617] flex items-center justify-center p-4">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="w-full max-w-md"
+      >
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            transition={{ delay: 0.2, duration: 0.5 }}
+            className="inline-flex items-center gap-3 mb-6"
+          >
+            <div className="w-12 h-12 bg-gradient-to-br from-[#22C55E] to-[#16A34A] rounded-xl flex items-center justify-center">
+              <Dumbbell className="text-white" size={24} />
             </div>
-            <h2 className="text-2xl font-bold">Welcome back</h2>
-            <p className="text-dark-400 mt-1">Sign in to your account</p>
-          </div>
-          <div className="hidden lg:block mb-8">
-            <h2 className="text-2xl font-bold">Welcome back</h2>
-            <p className="text-dark-400 mt-1">Sign in to continue to Gymer</p>
-          </div>
+            <span className="text-2xl font-bold text-white">GYMER</span>
+          </motion.div>
+          
+          <h1 className="text-3xl font-bold text-white mb-2">Welcome Back</h1>
+          <p className="text-[#94A3B8]">Sign in to your premium fitness account</p>
+        </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <Input
-              label="Email"
-              type="email"
-              icon={<Mail size={16} />}
-              value={email}
-              onChange={e => setEmail(e.target.value)}
-              placeholder="you@example.com"
-              required
-            />
-            <div className="relative">
-              <Input
-                label="Password"
-                type={showPw ? 'text' : 'password'}
-                icon={<Lock size={16} />}
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-                placeholder="Enter your password"
-                required
-              />
-              <button type="button" onClick={() => setShowPw(!showPw)} className="absolute right-3 top-[38px] text-dark-500 hover:text-dark-400">
-                {showPw ? <EyeOff size={16} /> : <Eye size={16} />}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3, duration: 0.5 }}
+          className="bg-[#0f172a]/50 backdrop-blur-xl border border-[#334155] rounded-2xl p-8 shadow-2xl"
+        >
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <AnimatePresence>
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -10 }}
+                  className="flex items-center gap-2 p-3 bg-red-500/10 border border-red-500/30 rounded-lg"
+                >
+                  <AlertCircle className="text-red-400" size={20} />
+                  <span className="text-red-400 text-sm">{error}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-sm font-medium text-[#E2E8F0]">
+                Email Address
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Mail className="text-[#94A3B8]" size={20} />
+                </div>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  onFocus={() => setTouched({ ...touched, email: true })}
+                  className="w-full pl-10 pr-4 py-3 bg-[#020617]/50 border border-[#334155] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22C55E] focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              {touched.email && !validateEmail(email) && (
+                <p className="text-red-400 text-sm">Please enter a valid email address</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-sm font-medium text-[#E2E8F0]">
+                Password
+              </label>
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                  <Lock className="text-[#94A3B8]" size={20} />
+                </div>
+                <input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full pl-10 pr-12 py-3 bg-[#020617]/50 border border-[#334155] rounded-lg text-white placeholder-[#64748B] focus:outline-none focus:ring-2 focus:ring-[#22C55E] focus:border-transparent transition-all duration-200"
+                  placeholder="Enter your password"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-[#94A3B8] hover:text-white transition-colors"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
+              {touched.password && !validatePassword(password) && (
+                <p className="text-red-400 text-sm">Password must be at least 8 characters</p>
+              )}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input type="checkbox" className="w-4 h-4 bg-[#020617] border-[#334155] rounded focus:ring-[#22C55E] focus:ring-2" />
+                <span className="text-sm text-[#94A3B8]">Remember me</span>
+              </label>
+              <button type="button" className="text-sm text-[#22C55E] hover:text-[#16A34A] transition-colors">
+                Forgot password?
               </button>
             </div>
-            <div className="flex items-center justify-between text-sm">
-              <label className="flex items-center gap-2 text-dark-400 cursor-pointer">
-                <input type="checkbox" className="rounded bg-dark-800 border-dark-700 text-primary-600 focus:ring-primary-500" />
-                Remember me
-              </label>
-              <button type="button" className="text-primary-400 hover:text-primary-300">Forgot password?</button>
-            </div>
-            <Button type="submit" loading={loading} className="w-full" icon={<LogIn size={16} />}>
-              Sign In
-            </Button>
+
+            <motion.button
+              type="submit"
+              disabled={isLoading || !validateEmail(email) || !validatePassword(password)}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="w-full py-3 px-4 bg-gradient-to-r from-[#22C55E] to-[#16A34A] text-white font-semibold rounded-lg hover:from-[#16A34A] hover:to-[#15803D] transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+              ) : (
+                <>Sign In</>
+              )}
+            </motion.button>
           </form>
 
-          <p className="text-center text-sm text-dark-400 mt-6">
-            Don't have an account?{' '}
-            <Link to="/register" className="text-primary-400 hover:text-primary-300 font-medium">Create one</Link>
-          </p>
-
-          <div className="mt-8 p-4 bg-dark-800/50 rounded-lg border border-dark-700/50">
-            <p className="text-xs text-dark-500 text-center">Demo: admin@gymer.com / admin123</p>
+          <div className="mt-6 text-center">
+            <p className="text-sm text-[#94A3B8]">
+              Don't have an account?{' '}
+              <a href="/register" className="text-[#22C55E] hover:text-[#16A34A] font-medium">
+                Sign up for free
+              </a>
+            </p>
           </div>
         </motion.div>
-      </div>
+      </motion.div>
     </div>
   );
 }

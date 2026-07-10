@@ -1,7 +1,17 @@
 import { Response } from 'express';
 
-export function sendSuccess(res: Response, data: any = null, message = 'Success', statusCode = 200) {
-  return res.status(statusCode).json({ success: true, message, data });
+export function sendSuccess(res: Response, data: any = null, message = 'Success', statusCode = 200, extra: any = null) {
+  const response: any = { success: true, message, data };
+  if (extra) {
+    if (extra.pagination) {
+      response.pagination = extra.pagination;
+    } else if (extra.page || extra.limit || extra.total || extra.pages || 'page' in extra || 'limit' in extra || 'total' in extra || 'pages' in extra) {
+      response.pagination = extra;
+    } else {
+      Object.assign(response, extra);
+    }
+  }
+  return res.status(statusCode).json(response);
 }
 
 export function sendError(res: Response, message = 'Internal Server Error', statusCode = 500, errors?: any) {

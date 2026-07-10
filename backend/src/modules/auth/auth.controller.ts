@@ -27,11 +27,14 @@ export async function register(req: Request, res: Response, next: NextFunction) 
     const hashed = await bcrypt.hash(password, 12);
     const refCode = generateReferralCode(name);
 
+    // For testing, create users with member role by default
+    const userRole = 'member'; // Set default role to member for easier testing
+
     const result = await query(
       `INSERT INTO Users (email, password, name, phone, role, referral_code, is_active, email_verified)
        OUTPUT INSERTED.id, INSERTED.email, INSERTED.name, INSERTED.role, INSERTED.referral_code
-       VALUES (@email, @password, @name, @phone, 'member', @refCode, 1, 0)`,
-      { email, password: hashed, name, phone: phone || null, refCode }
+       VALUES (@email, @password, @name, @phone, @role, @refCode, 1, 0)`,
+      { email, password: hashed, name, phone: phone || null, role: userRole, refCode }
     );
     const user = result.recordset[0];
 

@@ -1,5 +1,5 @@
 import { useApi } from '../../hooks/useApi';
-import DataTable from '../../components/ui/data-table';
+import DataTable from '../../components/shared/DataTable';
 import PageHeader from '../../components/shared/page-header';
 import LoadingSpinner from '../../components/ui/loading-spinner';
 import ErrorState from '../../components/ui/error-state';
@@ -19,7 +19,7 @@ export default function CRMPage() {
   return (
     <div className='animate-fade-in space-y-6'>
       <PageHeader title='CRM' subtitle='Customer relationship management' />
-      <div className='card p-0'><DataTable columns={columns} data={data || []} emptyMessage='No customers found' /></div>
+      <div className='card p-0'><DataTable columns={columns} data={data || []} emptyTitle='No customers found' /></div>
     </div>
   );
 }

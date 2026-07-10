@@ -1,12 +1,26 @@
-﻿import React from 'react';
+import React, { useEffect } from 'react';
 import ReactDOM from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import App from './App';
+import { useAuthStore } from './stores/authStore';
 import './index.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
-  <React.StrictMode>
+function Root() {
+  const initUser = useAuthStore(s => s.initUser);
+  const initialized = useAuthStore(s => s.initialized);
+
+  useEffect(() => { initUser(); }, [initUser]);
+
+  if (!initialized) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center">
+        <div className="text-white text-lg">Loading...</div>
+      </div>
+    );
+  }
+
+  return (
     <BrowserRouter>
       <App />
       <Toaster
@@ -18,5 +32,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         }}
       />
     </BrowserRouter>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <React.StrictMode>
+    <Root />
   </React.StrictMode>
 );

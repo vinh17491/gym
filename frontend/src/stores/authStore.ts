@@ -1,19 +1,21 @@
-﻿import { create } from 'zustand';
+import { create } from 'zustand';
 import api from '../api/axios';
 import { User } from '../types';
 
 interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
+  initialized: boolean;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
+  initUser: () => Promise<void>;
   setUser: (user: User) => void;
-  refreshUser: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
   user: null,
   isAuthenticated: !!localStorage.getItem('token'),
+  initialized: false,
 
   login: async (email, password) => {
     const { data } = await api.post('/auth/login', { email, password });
@@ -23,19 +25,28 @@ export const useAuthStore = create<AuthState>((set, get) => ({
   },
 
   logout: () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('refreshToken');
-    set({ user: null, isAuthenticated: false });
-  },
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      set({ user: null, isAuthenticated: false });
+    },
 
-  setUser: (user) => set({ user }),
+    setUser: (user) => {
+      set({ user });
+    },
 
-  refreshUser: async () => {
+    initUser: async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      set({ initialized: true });
+      return;
+    }
     try {
       const { data } = await api.get('/auth/me');
-      set({ user: data.data });
+      set({ user: data.data, isAuthenticated: true, initialized: true });
     } catch {
-      get().logout();
+      localStorage.removeItem('token');
+      localStorage.removeItem('refreshToken');
+      set({ user: null, isAuthenticated: false, initialized: true });
     }
   },
 }));

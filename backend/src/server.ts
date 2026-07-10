@@ -7,7 +7,6 @@ import { logger } from './utils/logger';
 process.on('uncaughtException', (err) => {
   logger.error('UNCAUGHT_EXCEPTION:', err);
   console.error('UNCAUGHT_EXCEPTION:', err);
-  process.exit(1);
 });
 process.on('unhandledRejection', (reason) => {
   logger.error('UNHANDLED_REJECTION:', reason);

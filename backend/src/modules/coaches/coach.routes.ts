@@ -1,9 +1,12 @@
 import { Router } from 'express';
-import { authenticate, authorize } from '../../middleware/auth';
-import { UserRole } from '../../types';
-import { getDashboard, getMemberGrowth, getMonthlyStatement } from './coach.controller';
+import { getCoaches, getCoachById } from './coach.controller';
+
 const router = Router();
-router.get('/dashboard', authenticate, authorize(UserRole.COACH), getDashboard);
-router.get('/member-growth', authenticate, authorize(UserRole.COACH), getMemberGrowth);
-router.get('/statement', authenticate, authorize(UserRole.COACH), getMonthlyStatement);
+
+// Public - List all coaches
+router.get('/', getCoaches);
+
+// Public - Get coach by ID
+router.get('/:id', getCoachById);
+
 export default router;

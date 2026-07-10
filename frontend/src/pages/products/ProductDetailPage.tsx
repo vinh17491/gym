@@ -1,0 +1,955 @@
+import { useEffect, useState, useCallback } from 'react';
+import { useParams, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  ShoppingCart, Heart, Star, ZoomIn, ChevronLeft, ChevronRight,
+  Shield, Truck, RefreshCw, CheckCircle, X, Minus, Plus, StarHalf
+} from 'lucide-react';
+import { cn } from '../../lib/utils';
+import api from '../../api/axios';
+import { useAuthStore } from '../../stores/authStore';
+import { useProductsStore } from '../../stores/productsStore';
+
+/* ──────────────────────────────── Types ──────────────────────────────── */
+interface Product {
+  id: number;
+  product_name: string;
+  name?: string;
+  price: number;
+  sale_price?: number;
+  original_price?: number;
+  main_image: string;
+  additional_images?: string;
+  description: string;
+  specifications: Record<string, any>;
+  features?: string[];
+  sku: string;
+  stock: number;
+  rating: number;
+  review_count: number;
+  slug: string;
+  brand_name?: string;
+  category_name?: string;
+  category_slug?: string;
+  is_on_sale?: boolean;
+  is_featured: boolean;
+  is_sale?: boolean;
+  flavor?: string;
+  color?: string;
+  size?: string;
+  weight?: string;
+  source_url?: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+/* ──────────────────────────────── Helpers ──────────────────────────────── */
+const formatPrice = (p: number) =>
+  new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(p);
+
+const discountPct = (p: Product) =>
+  p.sale_price && p.price
+    ? Math.round(((p.price - p.sale_price) / p.price) * 100)
+    : 0;
+
+/* ──────────────────────────────── Sub-components ──────────────────────────────── */
+
+/* Star rating row (display only) */
+const Stars = ({ rating, size = 16 }: { rating: number; size?: number }) => {
+  const full = Math.floor(rating);
+  const hasHalf = rating - full >= 0.25;
+  return (
+    <div className="flex items-center gap-0.5">
+      {Array.from({ length: 5 }).map((_, i) => {
+        if (i < full) return <Star key={i} size={size} className="fill-yellow-400 text-yellow-400" />;
+        if (i === full && hasHalf) return <StarHalf key={i} size={size} className="fill-yellow-400 text-yellow-400" />;
+        return <Star key={i} size={size} className="text-gray-600" />;
+      })}
+    </div>
+  );
+};
+
+/* Image Gallery – thumbnails, zoom, lightbox */
+const ImageGallery = ({ main_image, additional_images }: { main_image: string; additional_images?: string }) => {
+  const allImages = [main_image, ...(additional_images ? additional_images.split(',').map(s => s.trim()).filter(Boolean) : [])];
+  const [activeIdx, setActiveIdx] = useState(0);
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [zoomed, setZoomed] = useState(false);
+
+  /* keyboard nav in lightbox */
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') setLightboxOpen(false);
+      if (e.key === 'ArrowLeft') setActiveIdx(i => Math.max(0, i - 1));
+      if (e.key === 'ArrowRight') setActiveIdx(i => Math.min(allImages.length - 1, i + 1));
+    };
+    window.addEventListener('keydown', handler);
+    return () => window.removeEventListener('keydown', handler);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxOpen]);
+
+  return (
+    <>
+      {/* Main image */}
+      <div
+        className="relative aspect-[4/3] rounded-2xl overflow-hidden cursor-crosshair group bg-gray-900/60"
+        onMouseEnter={() => setZoomed(true)}
+        onMouseLeave={() => setZoomed(false)}
+        onClick={() => setLightboxOpen(true)}
+      >
+        <img
+          src={allImages[activeIdx]}
+          alt=""
+          className={cn(
+            'w-full h-full object-cover transition-transform duration-500',
+            zoomed && 'scale-125'
+          )}
+        />
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+
+        {/* Zoom hint */}
+        <div className="absolute bottom-3 right-3 bg-black/50 backdrop-blur-sm rounded-full p-2 text-white/70">
+          <ZoomIn size={18} />
+        </div>
+
+        {/* Nav arrows (on hover) */}
+        {allImages.length > 1 && (
+          <>
+            <button
+              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.max(0, i - 1)); }}
+              className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              disabled={activeIdx === 0}
+            >
+              <ChevronLeft size={20} />
+            </button>
+            <button
+              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.min(allImages.length - 1, i + 1)); }}
+              className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+              disabled={activeIdx === allImages.length - 1}
+            >
+              <ChevronRight size={20} />
+            </button>
+          </>
+        )}
+      </div>
+
+      {/* Thumbnails */}
+      {allImages.length > 1 && (
+        <div className="flex gap-2 mt-3 overflow-x-auto pb-1">
+          {allImages.map((img, i) => (
+            <button
+              key={i}
+              onClick={() => setActiveIdx(i)}
+              className={cn(
+                'flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200',
+                i === activeIdx ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-white/10 hover:border-white/30'
+              )}
+            >
+              <img src={img} alt="" className="w-full h-full object-cover" />
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* Lightbox overlay */}
+      <AnimatePresence>
+        {lightboxOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 bg-black/95 backdrop-blur-xl flex items-center justify-center p-4"
+            onClick={() => setLightboxOpen(false)}
+          >
+            <button
+              onClick={() => setLightboxOpen(false)}
+              className="absolute top-4 right-4 bg-white/10 hover:bg-white/20 rounded-full p-2 text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+
+            {/* Counter */}
+            <div className="absolute top-4 left-4 text-white/60 text-sm font-body">
+              {activeIdx + 1} / {allImages.length}
+            </div>
+
+            <button
+              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.max(0, i - 1)); }}
+              className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 rounded-full p-3 text-white transition-colors"
+              disabled={activeIdx === 0}
+            >
+              <ChevronLeft size={28} />
+            </button>
+
+            <motion.img
+              key={activeIdx}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              transition={{ duration: 0.25 }}
+              src={allImages[activeIdx]}
+              alt=""
+              className="max-w-full max-h-[85vh] object-contain rounded-2xl"
+              onClick={e => e.stopPropagation()}
+            />
+
+            <button
+              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.min(allImages.length - 1, i + 1)); }}
+              className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 rounded-full p-3 text-white transition-colors"
+              disabled={activeIdx === allImages.length - 1}
+            >
+              <ChevronRight size={28} />
+            </button>
+
+            {/* Lightbox thumbnails */}
+            <div className="absolute bottom-4 flex gap-2">
+              {allImages.map((img, i) => (
+                <button
+                  key={i}
+                  onClick={e => { e.stopPropagation(); setActiveIdx(i); }}
+                  className={cn(
+                    'w-12 h-12 rounded-lg overflow-hidden border-2 transition-all',
+                    i === activeIdx ? 'border-orange-500' : 'border-transparent opacity-60 hover:opacity-100'
+                  )}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
+
+/* Pill selector (flavour / size / colour) */
+const PillSelect = ({
+  label, options, value, onChange
+}: {
+  label: string; options: string[]; value?: string; onChange: (v: string) => void;
+}) => {
+  if (!options || options.length === 0) return null;
+  return (
+    <div>
+      <p className="text-sm font-medium text-gray-400 mb-2 font-body">{label}</p>
+      <div className="flex flex-wrap gap-2">
+        {options.map(opt => (
+          <button
+            key={opt}
+            onClick={() => onChange(opt)}
+            className={cn(
+              'px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 font-body',
+              value === opt
+                ? 'border-orange-500 bg-orange-500/10 text-orange-400'
+                : 'border-white/10 text-gray-300 hover:border-white/30 hover:text-white'
+            )}
+          >
+            {opt}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+};
+
+/* Trust badge row */
+const TrustBadges = () => {
+  const items = [
+    { icon: Truck, label: 'Free Shipping', sub: 'Orders over $50' },
+    { icon: RefreshCw, label: 'Easy Returns', sub: '30-day return' },
+    { icon: Shield, label: 'Secure Checkout', sub: 'SSL encrypted' },
+  ];
+  return (
+    <div className="grid grid-cols-3 gap-3">
+      {items.map(({ icon: Icon, label, sub }) => (
+        <div key={label} className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+          <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
+            <Icon size={18} className="text-orange-400" />
+          </div>
+          <div>
+            <p className="text-xs font-semibold text-white font-body">{label}</p>
+            <p className="text-[10px] text-gray-500 font-body">{sub}</p>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+/* Frequently Bought Together */
+const FBTItem = ({ p, checked, onToggle }: { p: Product; checked: boolean; onToggle: () => void }) => (
+  <label className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 cursor-pointer hover:bg-white/[0.06] transition-colors">
+    <input type="checkbox" checked={checked} onChange={onToggle} className="accent-orange-500 w-4 h-4" />
+    <img src={p.main_image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+    <div className="flex-1 min-w-0">
+      <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
+      <p className="text-xs text-gray-400 font-body">{p.sale_price ? formatPrice(p.sale_price) : formatPrice(p.price)}</p>
+    </div>
+  </label>
+);
+
+/* ──────────────────────────────── Loading Skeleton ──────────────────────────────── */
+const Skeleton = ({ className }: { className?: string }) => (
+  <div className={cn('animate-pulse bg-white/[0.06] rounded-xl', className)} />
+);
+
+const LoadingSkeleton = () => (
+  <div className="min-h-screen bg-[#020617]">
+    {/* floating orbs bg */}
+    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+      <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
+    </div>
+    <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <Skeleton className="h-4 w-64 mb-8" />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12">
+        {/* Gallery skeleton */}
+        <div className="space-y-3">
+          <Skeleton className="aspect-[4/3] rounded-2xl" />
+          <div className="flex gap-2">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="w-16 h-16 rounded-xl" />
+            ))}
+          </div>
+        </div>
+
+        {/* Info skeleton */}
+        <div className="space-y-5">
+          <Skeleton className="h-4 w-24" />
+          <Skeleton className="h-8 w-3/4" />
+          <Skeleton className="h-4 w-1/3" />
+          <div className="flex gap-1">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="w-4 h-4 rounded" />
+            ))}
+          </div>
+          <Skeleton className="h-10 w-40" />
+          <Skeleton className="h-6 w-full" />
+          <Skeleton className="h-6 w-5/6" />
+          <div className="flex gap-2">
+            <Skeleton className="h-10 w-20 rounded-full" />
+            <Skeleton className="h-10 w-20 rounded-full" />
+            <Skeleton className="h-10 w-20 rounded-full" />
+          </div>
+          <div className="flex gap-3">
+            <Skeleton className="h-12 flex-1 rounded-xl" />
+            <Skeleton className="h-12 w-12 rounded-xl" />
+          </div>
+          <div className="grid grid-cols-3 gap-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-16 rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Tabs skeleton */}
+      <div className="mt-12">
+        <div className="flex gap-6 border-b border-white/10 pb-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-6 w-24" />
+          ))}
+        </div>
+        <div className="mt-6 space-y-3">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-4 w-full" />
+          ))}
+        </div>
+      </div>
+
+      {/* FBT skeleton */}
+      <div className="mt-12">
+        <Skeleton className="h-7 w-64 mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <Skeleton key={i} className="h-20 rounded-xl" />
+          ))}
+        </div>
+      </div>
+
+      {/* Related skeleton */}
+      <div className="mt-12">
+        <Skeleton className="h-7 w-48 mb-4" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Skeleton key={i} className="h-72 rounded-xl" />
+          ))}
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
+/* ──────────────────────────────── Main Component ──────────────────────────────── */
+export default function ProductDetailPage() {
+  const { id } = useParams<{ id: string }>();
+  const [product, setProduct] = useState<Product | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
+  const [quantity, setQuantity] = useState(1);
+  const [activeTab, setActiveTab] = useState('description');
+  const [addedToCart, setAddedToCart] = useState(false);
+  const [selectedFlavor, setSelectedFlavor] = useState('');
+  const [selectedSize, setSelectedSize] = useState('');
+  const [selectedColor, setSelectedColor] = useState('');
+
+  const { isAuthenticated } = useAuthStore();
+  const { addToCart, toggleWishlist, isInWishlist } = useProductsStore();
+  const inWishlist = isInWishlist(product?.id ?? 0);
+
+  const fetchProduct = useCallback(async () => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/products/${id}`);
+      const p = res.data.data || null;
+      setProduct(p);
+      setRelatedProducts(res.data.related_products || []);
+      setError(null);
+    } catch (err: any) {
+      setError(err?.message || 'Product not found');
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
+  useEffect(() => {
+    if (id) fetchProduct();
+  }, [id, fetchProduct]);
+
+  const handleAddToCart = async () => {
+    if (!product) return;
+    await addToCart(product.id, quantity);
+    setAddedToCart(true);
+    setTimeout(() => setAddedToCart(false), 2000);
+  };
+
+  const handleWishlist = () => {
+    if (!isAuthenticated) { window.location.href = '/login'; return; }
+    if (product) toggleWishlist(product.id);
+  };
+
+  /* ──── render ──── */
+    if (loading) {
+      return <LoadingSkeleton />;
+    }
+
+    if (error || !product) {
+      return (
+        <div className="min-h-screen bg-[#020617] flex items-center justify-center relative">
+          <div className="absolute inset-0 overflow-hidden pointer-events-none">
+            <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
+          </div>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="relative text-center max-w-md mx-auto px-4"
+          >
+            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+              <X size={36} className="text-red-400" />
+            </div>
+            <h1 className="text-2xl font-bold text-white mb-2 font-display">Product Not Found</h1>
+            <p className="text-gray-400 mb-6 font-body">{error || 'The product you\'re looking for doesn\'t exist or has been removed.'}</p>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center">
+              <button
+                onClick={fetchProduct}
+                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-body"
+              >
+                Try Again
+              </button>
+              <Link
+                to="/products"
+                className="px-6 py-3 bg-white/5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 font-body"
+              >
+                Browse Products
+              </Link>
+            </div>
+          </motion.div>
+        </div>
+      );
+    }
+    
+    const p = product;
+    const isOnSale = Boolean(
+    p.sale_price != null && p.sale_price < p.price
+    );
+    const discPct = discountPct(p);
+    const parseOptions = (value?: string) =>
+    value
+    ? value
+        .split(',')
+        .map(item => item.trim())
+        .filter(Boolean)
+    : [];
+    const flavorOptions = parseOptions(p.flavor);
+    const sizeOptions = parseOptions(p.size);
+    const colorOptions = parseOptions(p.color);
+    const sampleReviews: Array<{
+    user: string;
+    rating: number;
+    date: string;
+    comment: string;
+    }> = [];
+    const [fbtChecked, setFbtChecked] = useState<boolean[]>([]);
+    const fbtProducts = relatedProducts.slice(0, 2);
+    const fbtTotal =
+    (p.sale_price ?? p.price) +
+    fbtProducts.reduce(
+      (total, item, index) =>
+        total +
+        (
+          fbtChecked[index]
+           ? item.sale_price ?? item.price
+            : 0
+       ),
+      0
+    );
+
+    return (
+    <div className="min-h-screen bg-[#020617] relative">
+      {/* ── Background gradient orbs ── */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute -top-40 -right-40 w-[500px] h-[500px] bg-gradient-to-br from-orange-500/8 to-orange-600/5 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -left-40 w-[500px] h-[500px] bg-gradient-to-tr from-green-500/8 to-emerald-600/5 rounded-full blur-3xl" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] bg-blue-500/3 rounded-full blur-3xl" />
+      </div>
+
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 lg:py-8">
+        {/* ── Breadcrumb ── */}
+        <motion.nav
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center gap-2 text-sm mb-6 font-body"
+        >
+          <Link to="/" className="text-gray-500 hover:text-white transition-colors">Home</Link>
+          <span className="text-gray-600">/</span>
+          <Link to="/products" className="text-gray-500 hover:text-white transition-colors">Products</Link>
+          <span className="text-gray-600">/</span>
+          {p.category_name && (
+            <>
+              <Link to={`/products?category=${p.category_slug || ''}`} className="text-gray-500 hover:text-white transition-colors">{p.category_name}</Link>
+              <span className="text-gray-600">/</span>
+            </>
+          )}
+          <span className="text-white/70 truncate max-w-[200px]">{p.product_name}</span>
+        </motion.nav>
+
+        {/* ── Hero section ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-10">
+          {/* ─── Gallery ──────── lg:col-span-7 ~58% */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="lg:col-span-7"
+          >
+            <ImageGallery main_image={p.main_image} additional_images={p.additional_images} />
+          </motion.div>
+
+          {/* ─── Product Info ──── lg:col-span-5 ~42% */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            className="lg:col-span-5"
+          >
+            <div className="space-y-5">
+              {/* Brand */}
+              {p.brand_name && (
+                <span className="inline-block text-orange-400 uppercase tracking-[0.2em] text-xs font-semibold font-body">
+                  {p.brand_name}
+                </span>
+              )}
+
+              {/* Product name */}
+              <h1 className="text-3xl lg:text-4xl font-bold text-white leading-tight font-heading">
+                {p.name || p.product_name}
+              </h1>
+
+              {/* Rating */}
+              <div className="flex items-center gap-3">
+                <Stars rating={p.rating || 0} size={18} />
+                <span className="text-sm text-gray-400 font-body">
+                  {p.rating ? p.rating.toFixed(1) : '0.0'}
+                  <span className="text-gray-600"> ({p.review_count || 0} reviews)</span>
+                </span>
+              </div>
+
+              {/* Price */}
+              <div className="flex items-end gap-3">
+                <span className="text-4xl font-bold text-white font-heading">
+                  {formatPrice(p.sale_price ?? p.price)}
+                </span>
+                {isOnSale && p.sale_price != null && (
+                  <>
+                    <span className="text-xl text-gray-500 line-through font-body">{formatPrice(p.price)}</span>
+                    <span className="px-2.5 py-1 bg-green-500/15 text-green-400 text-xs font-bold rounded-lg font-body">
+                      -{discPct}%
+                    </span>
+                  </>
+                )}
+              </div>
+
+              {/* Short description */}
+              <p className="text-gray-400 leading-relaxed font-body text-sm">
+                {p.description}
+              </p>
+
+              {/* Variant pills */}
+              <PillSelect label="Flavour" options={flavorOptions} value={selectedFlavor} onChange={setSelectedFlavor} />
+              <PillSelect label="Size" options={sizeOptions} value={selectedSize} onChange={setSelectedSize} />
+              <PillSelect label="Color" options={colorOptions} value={selectedColor} onChange={setSelectedColor} />
+
+              {/* Quantity + Add to cart */}
+              <div className="flex items-center gap-4">
+                <div className="flex items-center bg-white/[0.05] border border-white/[0.12] rounded-xl overflow-hidden">
+                  <button
+                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    disabled={quantity <= 1}
+                    className="px-3 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Minus size={18} />
+                  </button>
+                  <span className="px-5 py-2.5 text-white font-semibold min-w-[3rem] text-center tabular-nums font-body">
+                    {quantity}
+                  </span>
+                  <button
+                    onClick={() => setQuantity(q => Math.min(p.stock || 99, q + 1))}
+                    disabled={quantity >= (p.stock || 99)}
+                    className="px-3 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  >
+                    <Plus size={18} />
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  disabled={p.stock <= 0}
+                  className={cn(
+                    'flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 font-body',
+                    p.stock <= 0
+                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                      : addedToCart
+                        ? 'bg-green-600 text-white'
+                        : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98]'
+                  )}
+                >
+                  {p.stock <= 0 ? (
+                    <>Out of Stock</>
+                  ) : addedToCart ? (
+                    <><CheckCircle size={20} /> Added!</>
+                  ) : (
+                    <><ShoppingCart size={20} /> Add to Cart</>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleWishlist}
+                  className={cn(
+                    'p-3 rounded-xl border transition-all duration-200',
+                    inWishlist
+                      ? 'bg-red-500/10 border-red-500/30 text-red-400'
+                      : 'bg-white/[0.05] border-white/[0.12] text-gray-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5'
+                  )}
+                >
+                  <Heart size={20} className={inWishlist ? 'fill-red-400' : ''} />
+                </button>
+              </div>
+
+              {/* Stock indicator */}
+              <div className="flex items-center gap-2 text-sm font-body">
+                {p.stock > 0 ? (
+                  p.stock <= 5 ? (
+                    <span className="text-orange-400 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-orange-400 rounded-full animate-pulse" />
+                      Only {p.stock} left in stock
+                    </span>
+                  ) : (
+                    <span className="text-green-400 flex items-center gap-1">
+                      <CheckCircle size={14} />
+                      In Stock
+                    </span>
+                  )
+                ) : (
+                  <span className="text-red-400 flex items-center gap-1">
+                    <X size={14} />
+                    Out of Stock
+                  </span>
+                )}
+                {p.sku && <span className="text-gray-600 ml-auto">SKU: {p.sku}</span>}
+              </div>
+
+              {/* Trust badges */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.25 }}
+              >
+                <TrustBadges />
+              </motion.div>
+            </div>
+          </motion.div>
+        </div>
+
+        {/* ── Tabs section ── */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, margin: '-80px' }}
+          transition={{ duration: 0.5 }}
+          className="mt-14 lg:mt-20"
+        >
+          <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl backdrop-blur-sm overflow-hidden">
+            {/* Tab buttons */}
+            <div className="flex border-b border-white/[0.08] overflow-x-auto">
+              {[
+                { key: 'description', label: 'Description' },
+                { key: 'specifications', label: 'Specifications' },
+                { key: 'ingredients', label: 'Ingredients' },
+                { key: 'reviews', label: `Reviews (${p.review_count || 0})` },
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={cn(
+                    'relative px-5 py-4 text-sm font-semibold whitespace-nowrap transition-colors font-body',
+                    activeTab === tab.key
+                      ? 'text-orange-400'
+                      : 'text-gray-500 hover:text-gray-300'
+                  )}
+                >
+                  {tab.label}
+                  {activeTab === tab.key && (
+                    <motion.div
+                      layoutId="tab-underline"
+                      className="absolute bottom-0 left-0 right-0 h-0.5 bg-orange-400"
+                    />
+                  )}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab content with fade */}
+            <div className="p-6 md:p-8">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeTab}
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  {/* ── Description ── */}
+                  {activeTab === 'description' && (
+                    <div className="prose prose-invert max-w-none">
+                      <p className="text-gray-300 leading-relaxed font-body">{p.description}</p>
+                      {p.features && p.features.length > 0 && (
+                        <ul className="mt-4 space-y-2">
+                          {p.features.map((f, i) => (
+                            <li key={i} className="flex items-start gap-2 text-gray-400 font-body">
+                              <CheckCircle size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+                              <span>{f}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Specifications ── */}
+                  {activeTab === 'specifications' && (
+                    <div>
+                      {p.specifications && Object.keys(p.specifications).length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {Object.entries(p.specifications).map(([key, value]) => (
+                            <div
+                              key={key}
+                              className="flex justify-between items-center py-3 px-4 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+                            >
+                              <span className="text-gray-400 text-sm font-medium font-body capitalize">{key.replace(/_/g, ' ')}</span>
+                              <span className="text-white text-sm font-semibold font-body">{String(value)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-gray-500 text-center py-8 font-body">No specifications available.</p>
+                      )}
+                    </div>
+                  )}
+
+                  {/* ── Ingredients ── */}
+                  {activeTab === 'ingredients' && (
+                    <div>
+                      <p className="text-gray-400 font-body">Ingredient details are not available for this product.</p>
+                    </div>
+                  )}
+
+                  {/* ── Reviews ── */}
+                  {activeTab === 'reviews' && (
+                    <div>
+                      {/* Rating summary */}
+                      <div className="flex items-center gap-6 mb-8 p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
+                        <div className="text-center">
+                          <div className="text-4xl font-bold text-white font-heading">{p.rating ? p.rating.toFixed(1) : '0.0'}</div>
+                          <Stars rating={p.rating || 0} size={14} />
+                          <p className="text-xs text-gray-500 mt-1 font-body">{p.review_count || 0} reviews</p>
+                        </div>
+                        <div className="flex-1 space-y-1.5">
+                          {[5, 4, 3, 2, 1].map(star => {
+                            const pct = p.review_count ? Math.round((sampleReviews.filter(r => r.rating === star).length / Math.max(p.review_count, sampleReviews.length)) * 100) : 0;
+                            return (
+                              <div key={star} className="flex items-center gap-2 text-xs font-body">
+                                <span className="text-gray-400 w-8">{star} ★</span>
+                                <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
+                                  <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${pct || 0}%` }} />
+                                </div>
+                                <span className="text-gray-600 w-6 text-right">{pct}%</span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {p.review_count === 0 ? (
+                        <div className="text-center py-8">
+                          <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
+                            <Star size={28} className="text-gray-500" />
+                          </div>
+                          <p className="text-gray-400 font-body">No reviews yet. Be the first to review!</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {sampleReviews.map((review, i) => (
+                            <div
+                              key={i}
+                              className="bg-white/[0.03] border border-white/[0.06] rounded-xl p-5"
+                            >
+                              <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-full bg-orange-500/10 border border-orange-500/20 flex items-center justify-center text-sm font-bold text-orange-400 font-body">
+                                    {review.user.charAt(0)}
+                                  </div>
+                                  <div>
+                                    <p className="font-medium text-white text-sm font-body">{review.user}</p>
+                                    <Stars rating={review.rating} size={12} />
+                                  </div>
+                                </div>
+                                <span className="text-xs text-gray-500 font-body">{review.date}</span>
+                              </div>
+                              <p className="text-gray-300 text-sm leading-relaxed font-body">{review.comment}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </motion.div>
+              </AnimatePresence>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* ── Frequently Bought Together ── */}
+        {fbtProducts.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.5, delay: 0.1 }}
+            className="mt-14 lg:mt-20"
+          >
+            <h2 className="text-2xl font-bold text-white mb-6 font-heading">Frequently Bought Together</h2>
+            <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl backdrop-blur-sm p-6 md:p-8">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                {/* This product (always selected) */}
+                <div className="flex items-center gap-3 bg-white/[0.05] border border-orange-500/20 rounded-xl p-3">
+                  <CheckCircle size={20} className="text-orange-500 flex-shrink-0" />
+                  <img src={p.main_image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
+                    <p className="text-xs text-orange-400 font-body">{formatPrice(p.sale_price ?? p.price)}</p>
+                  </div>
+                </div>
+                {fbtProducts.map((fp, i) => (
+                  <FBTItem key={fp.id} p={fp} checked={fbtChecked[i] ?? false} onToggle={() => {
+                    setFbtChecked(prev => {
+                      const next = [...prev];
+                      next[i] = !next[i];
+                      return next;
+                    });
+                  }} />
+                ))}
+              </div>
+
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
+                <div>
+                  <p className="text-sm text-gray-400 font-body">Total price:</p>
+                  <p className="text-2xl font-bold text-white font-heading">{formatPrice(fbtTotal)}</p>
+                </div>
+                <button
+                  onClick={() => {
+                    /* bulk add all checked */
+                    fbtProducts.forEach((fp, i) => { if (fbtChecked[i]) addToCart(fp.id, 1); });
+                    handleAddToCart();
+                  }}
+                  className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 active:scale-[0.98] font-body"
+                >
+                  Add All to Cart
+                </button>
+              </div>
+            </div>
+          </motion.section>
+        )}
+
+        {/* ── Related Products ── */}
+        {relatedProducts.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true, margin: '-80px' }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mt-14 lg:mt-20 pb-12"
+          >
+            <h2 className="text-2xl font-bold text-white mb-6 font-heading">Related Products</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {relatedProducts.map(rp => (
+                <motion.div
+                  key={rp.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-60px' }}
+                  transition={{ duration: 0.35 }}
+                >
+                  <Link
+                    to={`/products/${rp.id}`}
+                    className="group block bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
+                  >
+                    <div className="aspect-[4/3] overflow-hidden">
+                      <img
+                        src={rp.main_image}
+                        alt={rp.product_name}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                      />
+                    </div>
+                    <div className="p-4">
+                      <h3 className="text-sm font-semibold text-white truncate font-body group-hover:text-orange-400 transition-colors">
+                        {rp.product_name}
+                      </h3>
+                      <p className="text-base font-bold text-orange-400 mt-1 font-heading">
+                        {rp.sale_price ? formatPrice(rp.sale_price) : formatPrice(rp.price)}
+                      </p>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </motion.section>
+        )}
+      </div>
+    </div>
+  );
+}

@@ -1,5 +1,5 @@
 import { useApi } from '../../hooks/useApi';
-import StatCard from '../../components/ui/stat-card';
+import StatCard from '../../components/shared/StatCard';
 import PageHeader from '../../components/shared/page-header';
 import LoadingSpinner from '../../components/ui/loading-spinner';
 import ErrorState from '../../components/ui/error-state';
@@ -17,9 +17,9 @@ export default function AnalyticsPage() {
     <div className='animate-fade-in space-y-6'>
       <PageHeader title='Analytics' subtitle='Business performance metrics' />
       <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8'>
-        <StatCard title='Daily Active Users' value={dashboard?.dau || 0} icon={Users} />
-        <StatCard title='Monthly Active Users' value={dashboard?.mau || 0} icon={TrendingUp} />
-        <StatCard title='Daily Revenue' value={'$' + (dashboard?.dailyRevenue || 0)} icon={DollarSign} />
+        <StatCard title='Daily Active Users' value={dashboard?.dau || 0} icon={<Users size={20} />} />
+        <StatCard title='Monthly Active Users' value={dashboard?.mau || 0} icon={<TrendingUp size={20} />} />
+        <StatCard title='Daily Revenue' value={'$' + (dashboard?.dailyRevenue || 0)} icon={<DollarSign size={20} />} />
         <StatCard title='Churn Rate' value={(dashboard?.churnRate?.toFixed(1) || 0) + '%'} icon={Percent} trend={{ value: 2, positive: false }} />
       </div>
       <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>

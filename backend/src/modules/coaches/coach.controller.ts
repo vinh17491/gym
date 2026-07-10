@@ -1,28 +1,62 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database';
+import { AppError } from '../../middleware/errorHandler';
 import { sendSuccess } from '../../utils/response';
 
-export async function getDashboard(req: Request, _res: Response, next: NextFunction) {
+export async function getCoaches(req: Request, res: Response, next: NextFunction) {
   try {
-    const [assigned, active, earnings] = await Promise.all([
-      query("SELECT COUNT(*) as total FROM CRMCustomers WHERE assigned_coach_id=@uid", { uid: req.user!.userId }),
-      query("SELECT COUNT(DISTINCT c.user_id) as total FROM WorkoutSessions ws JOIN CRMCustomers c ON ws.user_id=c.user_id WHERE c.assigned_coach_id=@uid AND ws.started_at>=DATEADD(day,-30,GETDATE())", { uid: req.user!.userId }),
-      query("SELECT ISNULL(SUM(commission_amount),0) as total FROM ReferralTransactions WHERE referrer_id=@uid AND status IN ('confirmed','paid')", { uid: req.user!.userId }),
-    ]);
-    sendSuccess(_res, { assignedMembers: assigned.recordset[0].total, activeMembers: active.recordset[0].total, monthlyEarnings: earnings.recordset[0].total, });
+    const { search = '', page = 1, limit = 20 } = req.query;
+    const offset = (Number(page) - 1) * Number(limit);
+    let where = "WHERE u.role = 'coach' AND u.is_active = 1";
+    const params: Record<string, any> = {};
+
+    if (search) {
+      where += ' AND (u.name LIKE @search OR u.email LIKE @search)';
+      params.search = `%${search}%`;
+    }
+
+    const result = await query(
+      `SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at,
+              COUNT(DISTINCT w.id) as workout_count
+       FROM Users u
+       LEFT JOIN Workouts w ON u.id = w.coach_id
+       ${where}
+       GROUP BY u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at
+       ORDER BY u.created_at DESC
+       OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
+      { ...params, offset, limit: Number(limit) }
+    );
+
+    const countResult = await query(
+      `SELECT COUNT(*) as total FROM Users u ${where}`,
+      params
+    );
+
+    sendSuccess(res, {
+      coaches: result.recordset,
+      pagination: {
+        page: Number(page),
+        limit: Number(limit),
+        total: countResult.recordset[0].total,
+        totalPages: Math.ceil(countResult.recordset[0].total / Number(limit))
+      }
+    });
   } catch (err) { next(err); }
 }
 
-export async function getMemberGrowth(req: Request, _res: Response, next: NextFunction) {
+export async function getCoachById(req: Request, res: Response, next: NextFunction) {
   try {
-    const r = await query("SELECT CAST(u.created_at AS DATE) as date, COUNT(*) as new_members FROM Users u JOIN CRMCustomers c ON u.id=c.user_id WHERE c.assigned_coach_id=@uid GROUP BY CAST(u.created_at AS DATE) ORDER BY date", { uid: req.user!.userId });
-    sendSuccess(_res, r.recordset);
-  } catch (err) { next(err); }
-}
-
-export async function getMonthlyStatement(_req: Request, _res: Response, next: NextFunction) {
-  try {
-    const r = await query("SELECT rt.*, u.name as referred_name FROM ReferralTransactions rt JOIN Users u ON rt.referred_id=u.id WHERE rt.referrer_id=@uid AND MONTH(rt.created_at)=MONTH(GETDATE()) AND YEAR(rt.created_at)=YEAR(GETDATE()) ORDER BY rt.created_at", { uid: _req.user!.userId });
-    sendSuccess(_res, r.recordset);
+    const { id } = req.params;
+    const result = await query(
+      `SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at,
+              COUNT(DISTINCT w.id) as workout_count
+       FROM Users u
+       LEFT JOIN Workouts w ON u.id = w.coach_id
+       WHERE u.id = @id AND u.role = 'coach' AND u.is_active = 1
+       GROUP BY u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at`,
+      { id }
+    );
+    if (result.recordset.length === 0) throw new AppError(404, 'Coach not found');
+    sendSuccess(res, result.recordset[0]);
   } catch (err) { next(err); }
 }

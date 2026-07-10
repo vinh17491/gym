@@ -1,32 +1,40 @@
-﻿import { cn } from '../../lib/utils';
-import { TrendingUp, TrendingDown } from 'lucide-react';
-
-interface StatCardProps {
+﻿interface StatCardProps {
   title: string;
   value: string | number;
-  icon?: React.ReactNode;
+  icon?: any;
   trend?: { value: number; positive: boolean };
+  subtitle?: string;
   className?: string;
   onClick?: () => void;
 }
 
-export default function StatCard({ title, value, icon, trend, className, onClick }: StatCardProps) {
+export default function StatCard({ title, value, icon, trend, subtitle, className, onClick }: StatCardProps) {
+  const renderIcon = () => {
+    if (!icon) return null;
+    if (typeof icon === 'function') {
+      const Icon = icon;
+      return <Icon size={18} />;
+    }
+    return icon;
+  };
+
   return (
     <div
-      className={cn('stat-card card-hover', onClick && 'cursor-pointer', className)}
+      className={'stat-card' + (onClick ? ' cursor-pointer' : '') + (className ? ' ' + className : '')}
       onClick={onClick}
     >
-      <div className="flex items-center justify-between">
-        <span className="text-sm text-dark-400 font-medium">{title}</span>
-        {icon && <div className="w-9 h-9 rounded-lg bg-primary-500/10 flex items-center justify-center text-primary-400">{icon}</div>}
+      <div className="flex items-center justify-between mb-1">
+        <span className="text-sm text-[#94A3B8] font-medium">{title}</span>
+        {icon && <div className="p-2 rounded-lg bg-[#22C55E]/10 text-[#22C55E]">{renderIcon()}</div>}
       </div>
-      <p className="text-2xl sm:text-3xl font-bold tracking-tight mt-1">{value}</p>
+      <p className="text-2xl font-bold tracking-tight">{typeof value === 'number' ? value.toLocaleString() : value}</p>
       {trend && (
-        <div className={cn('flex items-center gap-1 text-xs mt-2', trend.positive ? 'text-green-400' : 'text-red-400')}>
-          {trend.positive ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-          <span>{trend.value}% vs last month</span>
+        <div className={'flex items-center gap-1 text-xs mt-2 ' + (trend.positive ? 'text-[#22C55E]' : 'text-red-400')}>
+          <span>{trend.positive ? '↑' : '↓'} {Math.abs(trend.value)}%</span>
+          <span className="text-[#64748B]">vs last month</span>
         </div>
       )}
+      {subtitle && <p className="text-xs text-[#64748B] mt-1">{subtitle}</p>}
     </div>
   );
 }

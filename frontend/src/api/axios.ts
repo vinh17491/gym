@@ -1,4 +1,4 @@
-﻿import axios from 'axios';
+import axios from 'axios';
 
 const api = axios.create({ baseURL: '/api', timeout: 15000 });
 
@@ -34,5 +34,12 @@ api.interceptors.response.use(
     return Promise.reject(err);
   }
 );
+
+export const productAPI = {
+  get: (url: string) => api.get(url),
+  post: (url: string, data?: any) => api.post(url, data),
+  put: (url: string, data?: any) => api.put(url, data),
+  delete: (url: string) => api.delete(url),
+};
 
 export default api;

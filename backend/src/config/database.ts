@@ -1,5 +1,5 @@
 import * as sql from 'mssql';
-import { config as appConfig } from './config';
+import { config as appConfig } from '../config/config';
 import { logger } from '../utils/logger';
 
 let pool: sql.ConnectionPool | null = null;
