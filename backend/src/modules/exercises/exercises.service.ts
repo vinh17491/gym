@@ -1,4 +1,4 @@
-import { query, sql } from '../../config/database';
+import { query } from '../../config/database';
 
 export interface Exercise {
   id: number;

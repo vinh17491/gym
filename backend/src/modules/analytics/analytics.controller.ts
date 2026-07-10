@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { query, executeProc } from '../../config/database';
+import { query } from '../../config/database';
 import { sendSuccess } from '../../utils/response';
 
 export async function getDashboard(_req: Request, _res: Response, next: NextFunction) {
@@ -50,7 +50,7 @@ export async function getUserGrowth(_req: Request, _res: Response, next: NextFun
 
 export async function exportReport(req: Request, _res: Response, next: NextFunction) {
   try {
-    const { format, type, start, end } = req.query;
+    const { format, start, end } = req.query;
     const r = await query(`SELECT * FROM AnalyticsDaily WHERE date BETWEEN @start AND ISNULL(@end, GETDATE())`, { start: start || '2024-01-01', end: end || null });
     if (format === 'csv') {
       const headers = Object.keys(r.recordset[0] || {}).join(',');

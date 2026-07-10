@@ -2,7 +2,6 @@ import { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { sendSuccess } from '../../utils/response';
-import { UserRole } from '../../types';
 
 export async function getPlans(req: Request, res: Response, next: NextFunction) {
   try {

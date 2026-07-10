@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database';
-import { sendSuccess, sendError } from '../../utils/response';
+import { sendSuccess } from '../../utils/response';
 import { AppError } from '../../middleware/errorHandler';
 
 export async function validateCoupon(req: Request, _res: Response, next: NextFunction) {
@@ -16,7 +16,7 @@ export async function validateCoupon(req: Request, _res: Response, next: NextFun
     const plan = await query('SELECT price FROM Plans WHERE id=@pid', { pid: plan_id });
     if (plan.recordset.length === 0) throw new AppError(404, 'Plan not found');
     if (plan.recordset[0].price < coupon.min_purchase) throw new AppError(400, 'Minimum purchase not met');
-    let discount = coupon.type === 'percentage' ? plan.recordset[0].price * coupon.value / 100 : coupon.value;
+    const discount = coupon.type === 'percentage' ? plan.recordset[0].price * coupon.value / 100 : coupon.value;
     sendSuccess(_res, { coupon, discount: Math.min(discount, plan.recordset[0].price) });
   } catch (err) { next(err); }
 }

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import { register, login, logout, getMe, refreshToken } from './auth.controller';
-import { getMe as getMyProfile, updateMe, changePassword, uploadAvatar, deleteAvatar } from './me.controller';
+import { updateMe, changePassword, uploadAvatar, deleteAvatar } from './me.controller';
 import { authenticate } from '../../middleware/auth';
 import { validate } from '../../middleware/validate';
 import { registerSchema, loginSchema } from './auth.validation';

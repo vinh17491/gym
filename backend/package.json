@@ -7,8 +7,7 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "lint": "eslint src --ext .ts",
-    "db:reset": "sqlcmd -S DESKTOP-0PI1Q6Q -U SA -P MySecretPass123 -i ../db/schema.sql"
+    "lint": "eslint src --ext .ts"
   },
   "dependencies": {
     "@types/csurf": "^1.11.5",
@@ -52,6 +51,9 @@
     "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^6.4.15",
     "@types/pdfkit": "^0.13.9",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "eslint": "^8.57.1",
     "tsx": "^4.19.0",
     "typescript": "^5.5.3"
   }

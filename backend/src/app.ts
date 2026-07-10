@@ -7,7 +7,7 @@ import { config } from './config/config';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
 import { sessionMiddleware } from './middleware/session';
-import { csrfProtection } from './middleware/csrf';
+import { csrfProtection, generateCsrfToken } from './middleware/csrf';
 import { sanitizeMiddleware } from './middleware/sanitize';
 import { createAuditMiddleware } from './middleware/auditLogger';
 import { securityHeaders } from './middleware/securityHeaders';
@@ -29,7 +29,6 @@ import exercisesRoutes from './modules/exercises';
 import bookingRoutes from './modules/bookings/bookings.routes';
 import productRoutes from './modules/products/products.routes';
 import mediaRoutes from './modules/media/media.routes';
-import { logger } from './utils/logger';
 
 const app = express();
 
@@ -70,7 +69,7 @@ app.get('/api/health', (_req, res) => res.json({ success: true, message: 'Gymer 
 
 // CSRF token endpoint
 app.get('/api/csrf-token', (req, res) => {
-  const token = require('./middleware/csrf').generateCsrfToken(req);
+  const token = generateCsrfToken(req);
   res.json({ csrfToken: token });
 });
 

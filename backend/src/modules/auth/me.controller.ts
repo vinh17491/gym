@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { query } from '../../config/database';
 import { AppError } from '../../middleware/errorHandler';
 import { sendSuccess } from '../../utils/response';
+import * as bcrypt from 'bcryptjs';
 
 export async function getMe(req: Request, res: Response, next: NextFunction) {
   try {
@@ -33,7 +34,6 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     if (getUser.recordset.length === 0) throw new AppError(404, 'User not found');
 
     const stored = getUser.recordset[0].password;
-    const bcrypt = require('bcryptjs');
     const valid = await bcrypt.compare(current_password, stored);
     if (!valid) throw new AppError(401, 'Current password is incorrect');
 

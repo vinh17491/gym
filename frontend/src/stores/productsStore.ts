@@ -77,7 +77,7 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
   fetchProducts: async () => {
     set({ isLoading: true, error: null });
     try {
-      const res = await api.get('/api/products');
+      const res = await api.get('/products');
       set({ products: Array.isArray(res.data.data) ? res.data.data : res.data.data?.data || [] });
     } catch (err: any) {
       set({ error: err.response?.data?.message || 'Failed to fetch products' });
@@ -87,21 +87,21 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
 
   fetchFeaturedProducts: async () => {
     try {
-      const res = await api.get('/api/products/featured');
+      const res = await api.get('/products/featured');
       set({ featuredProducts: res.data.data || [] });
     } catch {}
   },
 
   fetchNewProducts: async () => {
     try {
-      const res = await api.get('/api/products/new');
+      const res = await api.get('/products/new');
       set({ newProducts: res.data.data || [] });
     } catch {}
   },
 
   fetchSaleProducts: async () => {
     try {
-      const res = await api.get('/api/products/sale');
+      const res = await api.get('/products/sale');
       set({ saleProducts: res.data.data || [] });
     } catch {}
   },

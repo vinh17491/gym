@@ -27,7 +27,6 @@
 17. [Exercises](#17-exercises)
 18. [Products](#18-products)
 19. [Media](#19-media)
-20. [WGER Integration](#20-wger-integration)
 21. [Affiliate](#21-affiliate)
 22. [Notifications](#22-notifications)
 
@@ -450,33 +449,6 @@
 
 ---
 
-## 20. WGER Integration
-
-**Files:** `wger.routes.ts`, `services/wger.service.ts`
-**Prefix:** `/api/wger`
-
-| Method | Path | Auth | Roles | Description |
-|--------|------|------|-------|-------------|
-| GET | `/wger/exercises` | Public | — | List WGER exercises with pagination. Filters: `category`, `muscle`, `equipment`, `search`. |
-| GET | `/wger/exercises/:id` | Public | — | Get single WGER exercise by ID. |
-| GET | `/wger/exercises/:id/images` | Public | — | Get images for a WGER exercise. |
-| GET | `/wger/exercises/:id/videos` | Public | — | Get videos for a WGER exercise. |
-| GET | `/wger/categories` | Public | — | List WGER exercise categories. |
-| GET | `/wger/muscles` | Public | — | List WGER muscle groups. |
-| GET | `/wger/equipment` | Public | — | List WGER equipment types. |
-| GET | `/wger/images` | Public | — | List all exercise images (paginated). |
-| GET | `/wger/videos` | Public | — | List all exercise videos (paginated). |
-
-**Business Logic:**
-- Proxy to WGER API (external fitness exercise database)
-- Service layer (`wger.service.ts`) handles HTTP calls to WGER
-- Supports search, filter by muscle/equipment/category
-- Returns WGER's standard response format with `results` and `count`
-
-**Database Tables:** None (external API only)
-
----
-
 ## 21. Affiliate
 
 **Status:** Empty directory — no controller, routes, or service files exist yet.
@@ -577,6 +549,5 @@ src/modules/
 ├── revenue/        ✅ revenue.controller.ts, revenue.routes.ts
 ├── tickets/        ✅ ticket.controller.ts, ticket.routes.ts, ticket.validation.ts
 ├── users/          ❌ (empty directory)
-├── videos/         ✅ videos.controller.ts, videos.routes.ts
-└── wger/           ✅ wger.routes.ts (controller logic in services/wger.service.ts)
+└── videos/         ✅ videos.controller.ts, videos.routes.ts
 ```

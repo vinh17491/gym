@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { exercisesService, Exercise } from './exercises.service';
+import { exercisesService } from './exercises.service';
 
 export const exercisesController = {
   // GET /api/exercises
