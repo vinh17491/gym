@@ -28,6 +28,13 @@ export default defineConfig({
       },
     }),
   ],
-  server: { port: 5173, proxy: { '/api': 'http://localhost:5000', '/image': 'http://localhost:5000' } },
+  server: {
+    port: 5173,
+    proxy: {
+      '/api': 'http://localhost:5000',
+      '/image': 'http://localhost:5000',
+      '/media': 'http://localhost:5000',
+    },
+  },
   build: { outDir: 'dist', sourcemap: true },
 });

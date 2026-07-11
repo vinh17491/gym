@@ -154,6 +154,7 @@ export const productsService = {
     else if (params.sort === 'name') order = 'ORDER BY p.product_name ASC, p.id ASC';
     else if (params.sort === 'featured') order = 'ORDER BY p.is_featured DESC, p.id DESC';
     else if (params.sort === 'newest') order = 'ORDER BY p.created_at DESC, p.id DESC';
+    else if (params.sort === 'sale') order = 'ORDER BY CASE WHEN dv.sale_price IS NOT NULL AND dv.sale_price < dv.price THEN 0 ELSE 1 END, dv.effective_price ASC, p.id ASC';
 
     const countRequest = pool.request();
     bindListParams(countRequest, params);

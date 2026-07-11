@@ -135,6 +135,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           )}
         </div>
 
+        <p className={`text-xs font-medium ${outOfStock ? 'text-red-400' : 'text-emerald-400'}`}>
+          {outOfStock ? 'Out of Stock' : `${variant.available} in stock`}
+        </p>
+
         {/* Action Buttons - ẩn/hiện khi hover */}
         <div className="flex gap-2 pt-1 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out">
           <button

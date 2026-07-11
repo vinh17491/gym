@@ -18,6 +18,9 @@ const discountPct = (p: Product) =>
     ? Math.round(((p.display_variant.price - p.display_variant.sale_price) / p.display_variant.price) * 100)
     : 0;
 
+const primaryImageUrl = (product: Product) =>
+  product.primary_image?.image_url ?? product.images?.[0]?.image_url ?? '/placeholder-product.png';
+
 /* ──────────────────────────────── Sub-components ──────────────────────────────── */
 
 /* Star rating row (display only) */
@@ -248,7 +251,7 @@ const TrustBadges = () => {
 const FBTItem = ({ p, checked, onToggle }: { p: Product; checked: boolean; onToggle: () => void }) => (
   <label className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 cursor-pointer hover:bg-white/[0.06] transition-colors">
     <input type="checkbox" checked={checked} onChange={onToggle} className="accent-orange-500 w-4 h-4" />
-    <img src={p.main_image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+    <img src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
       <p className="text-xs text-gray-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
@@ -823,7 +826,7 @@ export default function ProductDetailPage() {
                 {/* This product (always selected) */}
                 <div className="flex items-center gap-3 bg-white/[0.05] border border-orange-500/20 rounded-xl p-3">
                   <CheckCircle size={20} className="text-orange-500 flex-shrink-0" />
-                  <img src={p.main_image} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                  <img src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
                     <p className="text-xs text-orange-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
@@ -885,7 +888,7 @@ export default function ProductDetailPage() {
                   >
                     <div className="aspect-[4/3] overflow-hidden">
                       <img
-                        src={rp.main_image}
+                        src={primaryImageUrl(rp)}
                         alt={rp.product_name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
                       />
