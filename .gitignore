@@ -3,6 +3,8 @@ dist/
 .env
 *.log
 uploads/
+backend/uploads/products/*
+!backend/uploads/products/.gitkeep
 backups/
 coverage/
 .DS_Store

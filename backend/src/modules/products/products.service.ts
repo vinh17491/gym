@@ -208,10 +208,10 @@ export const productsService = {
     return this.getDetail('p.id = @lookup', id);
   },
 
-  async getDetail(predicate: string, lookup: string | number) {
+  async getDetail(predicate: string, lookup: string | number, includeInactive = false) {
     const pool = await getPool();
     const baseResult = await pool.request().input('lookup', lookup).query(
-      `${productSelect} WHERE ${predicate} AND p.is_active = 1`
+      `${productSelect} WHERE ${predicate}${includeInactive ? '' : ' AND p.is_active = 1'}`
     );
     if (!baseResult.recordset[0]) return null;
 

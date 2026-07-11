@@ -110,7 +110,7 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
           name: p.product_name,
           price: p.display_variant.effective_price,
           sale_price: p.display_variant.sale_price ?? undefined,
-          main_image: p.main_image,
+          main_image: p.main_image || undefined,
           stock: p.display_variant.available,
         };
         const updated = [...cartItems, newItem];

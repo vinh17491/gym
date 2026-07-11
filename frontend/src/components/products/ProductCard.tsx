@@ -4,6 +4,7 @@ import { ShoppingCart, Heart, Star, Zap } from 'lucide-react';
 import { useProductsStore } from '../../stores/productsStore';
 import { formatCurrency } from '../../lib/utils';
 import type { Product } from '../../types/product';
+import ProductImage from './ProductImage';
 
 interface ProductCardProps {
   product: Product;
@@ -30,11 +31,10 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* Image Container */}
       <Link to={`/products/${product.slug || product.id}`} className="block relative overflow-hidden aspect-[4/5]">
-        <img
-          src={product.primary_image?.image_url || '/placeholder-product.png'}
+        <ProductImage
+          src={product.primary_image?.image_url}
           alt={name}
           className={`w-full h-full object-cover transition-all duration-700 ease-out group-hover:scale-110 ${outOfStock ? 'opacity-40 grayscale' : ''}`}
-          onError={(e) => { (e.target as HTMLImageElement).src = '/placeholder-product.png'; }}
         />
         {/* Gradient Overlay từ dưới lên */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#0F172A] via-[#0F172A]/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />

@@ -10,6 +10,8 @@ import api from '../../api/axios';
 import { useAuthStore } from '../../stores/authStore';
 import { useProductsStore } from '../../stores/productsStore';
 import type { Product, ProductDetailResponse, ProductImage } from '../../types/product';
+import SafeProductImage from '../../components/products/ProductImage';
+import { getPrimaryProductImage, getProductImageUrl, PRODUCT_PLACEHOLDER } from '../../lib/productImages';
 
 /* ──────────────────────────────── Types ──────────────────────────────── */
 /* ──────────────────────────────── Helpers ──────────────────────────────── */
@@ -18,8 +20,7 @@ const discountPct = (p: Product) =>
     ? Math.round(((p.display_variant.price - p.display_variant.sale_price) / p.display_variant.price) * 100)
     : 0;
 
-const primaryImageUrl = (product: Product) =>
-  product.primary_image?.image_url ?? product.images?.[0]?.image_url ?? '/placeholder-product.png';
+const primaryImageUrl = getPrimaryProductImage;
 
 /* ──────────────────────────────── Sub-components ──────────────────────────────── */
 
@@ -40,7 +41,7 @@ const Stars = ({ rating, size = 16 }: { rating: number; size?: number }) => {
 
 /* Image Gallery – thumbnails, zoom, lightbox */
 const ImageGallery = ({ images }: { images: ProductImage[] }) => {
-  const allImages = images.map(image => image.image_url);
+  const allImages = images.length ? images.map(image => getProductImageUrl(image.image_url)) : [PRODUCT_PLACEHOLDER];
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -67,7 +68,7 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
         onMouseLeave={() => setZoomed(false)}
         onClick={() => setLightboxOpen(true)}
       >
-        <img
+        <SafeProductImage
           src={allImages[activeIdx]}
           alt=""
           className={cn(
@@ -115,7 +116,7 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
                 i === activeIdx ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-white/10 hover:border-white/30'
               )}
             >
-              <img src={img} alt="" className="w-full h-full object-cover" />
+              <SafeProductImage src={img} alt="" className="w-full h-full object-cover" />
             </button>
           ))}
         </div>
@@ -161,6 +162,7 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
               alt=""
               className="max-w-full max-h-[85vh] object-contain rounded-2xl"
               onClick={e => e.stopPropagation()}
+              onError={e => { if (e.currentTarget.src !== new URL(PRODUCT_PLACEHOLDER, window.location.href).href) e.currentTarget.src = PRODUCT_PLACEHOLDER; else e.currentTarget.onerror = null; }}
             />
 
             <button
@@ -182,7 +184,7 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
                     i === activeIdx ? 'border-orange-500' : 'border-transparent opacity-60 hover:opacity-100'
                   )}
                 >
-                  <img src={img} alt="" className="w-full h-full object-cover" />
+                  <SafeProductImage src={img} alt="" className="w-full h-full object-cover" />
                 </button>
               ))}
             </div>
@@ -251,7 +253,7 @@ const TrustBadges = () => {
 const FBTItem = ({ p, checked, onToggle }: { p: Product; checked: boolean; onToggle: () => void }) => (
   <label className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 cursor-pointer hover:bg-white/[0.06] transition-colors">
     <input type="checkbox" checked={checked} onChange={onToggle} className="accent-orange-500 w-4 h-4" />
-    <img src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+    <SafeProductImage src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
     <div className="flex-1 min-w-0">
       <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
       <p className="text-xs text-gray-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
@@ -826,7 +828,7 @@ export default function ProductDetailPage() {
                 {/* This product (always selected) */}
                 <div className="flex items-center gap-3 bg-white/[0.05] border border-orange-500/20 rounded-xl p-3">
                   <CheckCircle size={20} className="text-orange-500 flex-shrink-0" />
-                  <img src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                  <SafeProductImage src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
                     <p className="text-xs text-orange-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
@@ -887,7 +889,7 @@ export default function ProductDetailPage() {
                     className="group block bg-white/[0.03] border border-white/[0.06] rounded-2xl overflow-hidden hover:bg-white/[0.06] hover:border-white/[0.12] transition-all duration-300"
                   >
                     <div className="aspect-[4/3] overflow-hidden">
-                      <img
+                      <SafeProductImage
                         src={primaryImageUrl(rp)}
                         alt={rp.product_name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"

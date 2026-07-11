@@ -29,6 +29,8 @@ import exercisesRoutes from './modules/exercises';
 import bookingRoutes from './modules/bookings/bookings.routes';
 import productRoutes from './modules/products/products.routes';
 import mediaRoutes from './modules/media/media.routes';
+import adminProductRoutes from './modules/admin-products/admin-products.routes';
+import path from 'path';
 
 const app = express();
 
@@ -45,8 +47,8 @@ app.use(createAuditMiddleware());
 app.use(apiLimiter);
 if (config.nodeEnv === 'development') app.use(morgan('dev'));
 
-app.use('/uploads', express.static('uploads'));
-app.use('/image', express.static('D:\\gymer\\image', {
+app.use('/uploads', express.static(path.resolve(config.upload.dir), { fallthrough: true, index: false, dotfiles: 'deny' }));
+app.use('/image', express.static(path.resolve(__dirname, '../../image'), {
   maxAge: '7d',
   etag: true,
   lastModified: true,
@@ -91,6 +93,7 @@ app.use('/api/videos', videoRoutes);
 app.use('/api/exercises', exercisesRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/products', productRoutes);
+app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/media', mediaRoutes);
 
 // CSRF protection for state-changing routes

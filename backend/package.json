@@ -9,7 +9,9 @@
     "start": "node dist/server.js",
     "lint": "eslint src --ext .ts",
     "db:migrate": "tsx src/scripts/migrate.ts",
-    "db:migrate:status": "tsx src/scripts/migrate.ts --status"
+    "db:migrate:status": "tsx src/scripts/migrate.ts --status",
+    "images:repair": "tsx src/scripts/repair-product-images.ts",
+    "images:restore": "tsx src/scripts/restore-product-images.ts"
   },
   "dependencies": {
     "@types/csurf": "^1.11.5",

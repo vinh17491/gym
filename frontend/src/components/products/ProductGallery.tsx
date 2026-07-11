@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import ProductImage from './ProductImage';
+import { getProductImageUrl } from '../../lib/productImages';
 
 interface Props { images: string[]; productName?: string; }
 
@@ -7,7 +9,7 @@ export default function ProductGallery({ images, productName = 'Product' }: Prop
   const [zoomed, setZoomed] = useState(false);
   const [zoomPos, setZoomPos] = useState({ x: 0, y: 0 });
   const safeImages = images.filter(Boolean);
-  const currentImage = safeImages[selectedImage] || 'https://via.placeholder.com/600';
+  const currentImage = getProductImageUrl(safeImages[selectedImage]);
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!zoomed) return;
@@ -25,7 +27,7 @@ export default function ProductGallery({ images, productName = 'Product' }: Prop
         onMouseLeave={() => setZoomed(false)}
         onMouseMove={handleMouseMove}
       >
-        <img
+        <ProductImage
           src={currentImage}
           alt={productName}
           className="w-full h-full object-contain p-4"
@@ -47,7 +49,7 @@ export default function ProductGallery({ images, productName = 'Product' }: Prop
                 i === selectedImage ? 'border-blue-500' : 'border-transparent hover:border-gray-500'
               }`}
             >
-              <img src={img} alt={`${productName} view ${i + 1}`} className="w-full h-full object-cover" />
+              <ProductImage src={img} alt={`${productName} view ${i + 1}`} className="w-full h-full object-cover" />
             </button>
           ))}
         </div>

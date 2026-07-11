@@ -37,6 +37,7 @@ import ExerciseDetail from './pages/exercises/ExerciseDetail';
 import WorkoutPrograms from './pages/exercises/WorkoutPrograms';
 import ProductsListPage from './pages/products/ProductsListPage';
 import ProductDetailPage from './pages/products/ProductDetailPage';
+import AdminProductsPage from './pages/admin/AdminProductsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -95,6 +96,7 @@ export default function App() {
           <Route path="/admin/audit" element={<AdminRoute><AuditPage /></AdminRoute>} />
           <Route path="/admin/revenue" element={<AdminRoute><RevenuePage /></AdminRoute>} />
           <Route path="/admin/backup" element={<AdminRoute><BackupPage /></AdminRoute>} />
+          <Route path="/admin/products" element={<AdminRoute><AdminProductsPage /></AdminRoute>} />
           <Route path="/coach" element={<CoachDashboard />} />
         </Route>
 
