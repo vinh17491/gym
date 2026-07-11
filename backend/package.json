@@ -11,7 +11,8 @@
     "db:migrate": "tsx src/scripts/migrate.ts",
     "db:migrate:status": "tsx src/scripts/migrate.ts --status",
     "images:repair": "tsx src/scripts/repair-product-images.ts",
-    "images:restore": "tsx src/scripts/restore-product-images.ts"
+    "images:restore": "tsx src/scripts/restore-product-images.ts",
+    "images:finalize": "tsx src/scripts/finalize-product-images.ts"
   },
   "dependencies": {
     "@types/csurf": "^1.11.5",
