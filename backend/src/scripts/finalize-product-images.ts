@@ -55,6 +55,12 @@ async function fileExists(target: string): Promise<boolean> {
   try { return (await fs.stat(target)).isFile(); } catch { return false; }
 }
 
+async function assertValidExistingDestination(plan: { destination_path: string; source_hash: string }): Promise<void> {
+  const destinationHash = createHash('sha256').update(await fs.readFile(plan.destination_path)).digest('hex');
+  if (destinationHash !== plan.source_hash) throw new Error('GUARDED_APPLY_ABORT destination exists with different content');
+  await sharp(plan.destination_path, { failOn: 'error' }).metadata();
+}
+
 async function main(): Promise<void> {
   if (!legacyArg && !process.env.LEGACY_PRODUCT_IMAGE_DIR) throw new Error('Set LEGACY_PRODUCT_IMAGE_DIR or pass --legacy-root=<directory>');
   if (!await directoryExists(legacyRoot)) throw new Error(`Legacy image root does not exist: ${legacyRoot}`);
@@ -122,25 +128,36 @@ async function main(): Promise<void> {
   const plannedCopies = (await Promise.all(pendingPlans.map(async (plan) => !(await fileExists(plan.destination_path))))).filter(Boolean).length;
   const unusedFiles = files.filter((file) => !used.has(file.relative) && !ambiguousPaths.has(file.relative));
   if (apply) {
-    const approved = pendingPlans.length === 1 && plannedCopies === 1 && collisionCount === 0
-      && pendingPlans[0].product_id === 37
-      && pendingPlans[0].source_relative === 'running-shoes/hoka-clifton-9-main.webp'
-      && pendingPlans[0].source_hash === '96c3a8e8abb78182779732edf0ed63c096d9825c5724ff5c1949f90954003d84';
-    if (!approved) throw new Error(`GUARDED_APPLY_ABORT expected verified=1 planned_inserts=1 planned_copies=1 ambiguous=0 for Product 37, got verified=${candidates.length} planned_inserts=${pendingPlans.length} planned_copies=${plannedCopies} ambiguous=${collisionCount}`);
-    const source = filesByPath.get('running-shoes/hoka-clifton-9-main.webp');
-    if (!source || createHash('sha256').update(await fs.readFile(source.absolute)).digest('hex') !== pendingPlans[0].source_hash) throw new Error('GUARDED_APPLY_ABORT source SHA-256 changed');
+    const expectedPlan = (plan: typeof plans[number]) => collisionCount === 0
+      && plan.product_id === 37
+      && plan.source_relative === 'running-shoes/hoka-clifton-9-main.webp'
+      && plan.source_hash === '96c3a8e8abb78182779732edf0ed63c096d9825c5724ff5c1949f90954003d84';
+    const insertPlan = pendingPlans.length === 1 ? pendingPlans[0] : undefined;
+    const noOpPlan = pendingPlans.length === 0 && plans.length === 1 && plans[0].already_present ? plans[0] : undefined;
+
+    if (insertPlan && expectedPlan(insertPlan) && (plannedCopies === 0 || plannedCopies === 1)) {
+      if (plannedCopies === 0) await assertValidExistingDestination(insertPlan);
+      const source = filesByPath.get('running-shoes/hoka-clifton-9-main.webp');
+      if (!source || createHash('sha256').update(await fs.readFile(source.absolute)).digest('hex') !== insertPlan.source_hash) throw new Error('GUARDED_APPLY_ABORT source SHA-256 changed');
+    } else if (noOpPlan && expectedPlan(noOpPlan)) {
+      await assertValidExistingDestination(noOpPlan);
+    } else {
+      throw new Error(`GUARDED_APPLY_ABORT expected verified=1, ambiguous=0, and either one guarded insert with planned_copies=0|1 or one valid no-op for Product 37; got verified=${candidates.length} planned_inserts=${pendingPlans.length} planned_copies=${plannedCopies} already_present=${plans.length - pendingPlans.length} ambiguous=${collisionCount}`);
+    }
   }
-  const backupPath = path.join(backupRoot, `bootstrap-plan-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-  await fs.mkdir(backupRoot, { recursive: true });
-  await fs.writeFile(backupPath, JSON.stringify({ created_at: new Date().toISOString(), mode: apply ? 'apply' : 'dry-run', legacy_root: legacyRoot, insert_plan: pendingPlans, verified: candidates.length, ambiguous: collisionCount, missing_products: missingProducts.length, unused_files: unusedFiles.map((file) => file.relative) }, null, 2), 'utf8');
+  const isNoOpApply = apply && pendingPlans.length === 0 && plans.length === 1 && plans[0].already_present;
+  let backupPath: string | null = null;
+  if (!isNoOpApply) {
+    backupPath = path.join(backupRoot, `bootstrap-plan-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+    await fs.mkdir(backupRoot, { recursive: true });
+    await fs.writeFile(backupPath, JSON.stringify({ created_at: new Date().toISOString(), mode: apply ? 'apply' : 'dry-run', legacy_root: legacyRoot, insert_plan: pendingPlans, verified: candidates.length, ambiguous: collisionCount, missing_products: missingProducts.length, unused_files: unusedFiles.map((file) => file.relative) }, null, 2), 'utf8');
+  }
 
   if (apply) {
     const plan = pendingPlans[0];
     const destinationExisted = await fileExists(plan.destination_path);
     if (destinationExisted) {
-      const destinationHash = createHash('sha256').update(await fs.readFile(plan.destination_path)).digest('hex');
-      if (destinationHash !== plan.source_hash) throw new Error('GUARDED_APPLY_ABORT destination exists with different content');
-      await sharp(plan.destination_path, { failOn: 'error' }).metadata();
+      await assertValidExistingDestination(plan);
     } else {
       await fs.mkdir(path.dirname(plan.destination_path), { recursive: true });
       await fs.copyFile(plan.source_path, plan.destination_path);
