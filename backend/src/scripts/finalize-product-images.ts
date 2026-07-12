@@ -2,6 +2,7 @@ import { createHash } from 'crypto';
 import { promises as fs } from 'fs';
 import path from 'path';
 import sharp from 'sharp';
+import type { ConnectionPool } from 'mssql';
 import { closePool, getPool, sql } from '../config/database';
 import { config } from '../config/config';
 
@@ -9,6 +10,7 @@ type ProductRow = { id: number; slug: string | null; category_slug: string | nul
 type ExistingImage = { product_id: number; image_url: string };
 type LegacyFile = { relative: string; absolute: string; hash: string };
 type Candidate = { product: ProductRow; file: LegacyFile; destination: string; url: string };
+type ApplyAction = 'INSERT' | 'NO_OP';
 
 const apply = process.argv.includes('--apply');
 const legacyArg = process.argv.find((arg) => arg.startsWith('--legacy-root='))?.slice('--legacy-root='.length);
@@ -59,6 +61,10 @@ async function assertValidExistingDestination(plan: { destination_path: string; 
   const destinationHash = createHash('sha256').update(await fs.readFile(plan.destination_path)).digest('hex');
   if (destinationHash !== plan.source_hash) throw new Error('GUARDED_APPLY_ABORT destination exists with different content');
   await sharp(plan.destination_path, { failOn: 'error' }).metadata();
+}
+
+async function readCounts(pool: ConnectionPool) {
+  return (await pool.request().query(`SELECT (SELECT COUNT(*) FROM dbo.Products) AS products,(SELECT COUNT(*) FROM dbo.ProductVariants) AS product_variants,(SELECT COUNT(*) FROM dbo.Inventory) AS inventory,(SELECT COUNT(*) FROM dbo.ProductImages) AS product_images,(SELECT COUNT(*) FROM dbo.Products p WHERE NOT EXISTS (SELECT 1 FROM dbo.ProductImages pi WHERE pi.product_id=p.id)) AS products_without_images,(SELECT COUNT(*) FROM dbo.ProductImages pi WHERE NOT EXISTS (SELECT 1 FROM dbo.Products p WHERE p.id=pi.product_id)) AS orphan_images,(SELECT COUNT(*) FROM (SELECT product_id FROM dbo.ProductImages WHERE is_primary=1 GROUP BY product_id HAVING COUNT(*)>1) x) AS multiple_primary,(SELECT COUNT(*) FROM dbo.ProductImages WHERE image_url LIKE '/media/%') AS media_records,(SELECT COUNT(*) FROM dbo.ProductImages WHERE image_url LIKE '/uploads/%') AS upload_records,(SELECT COUNT(*) FROM dbo.ProductImages WHERE image_url LIKE '/image/%') AS image_records`)).recordset[0];
 }
 
 async function main(): Promise<void> {
@@ -127,34 +133,51 @@ async function main(): Promise<void> {
   const pendingPlans = plans.filter((plan) => !plan.already_present);
   const plannedCopies = (await Promise.all(pendingPlans.map(async (plan) => !(await fileExists(plan.destination_path))))).filter(Boolean).length;
   const unusedFiles = files.filter((file) => !used.has(file.relative) && !ambiguousPaths.has(file.relative));
+  const expectedPlan = (plan: typeof plans[number]) => collisionCount === 0
+    && plan.product_id === 37
+    && plan.source_relative === 'running-shoes/hoka-clifton-9-main.webp'
+    && plan.source_hash === '96c3a8e8abb78182779732edf0ed63c096d9825c5724ff5c1949f90954003d84';
+  const insertPlan = pendingPlans.length === 1 ? pendingPlans[0] : undefined;
+  const noOpPlan = pendingPlans.length === 0 && plans.length === 1 && plans[0].already_present ? plans[0] : undefined;
+  const noOpRecords = noOpPlan ? existing.filter((row) => row.product_id === noOpPlan.product_id) : [];
+  let applyAction: ApplyAction | null = null;
+  if (insertPlan && expectedPlan(insertPlan) && (plannedCopies === 0 || plannedCopies === 1)) applyAction = 'INSERT';
+  if (noOpPlan && expectedPlan(noOpPlan) && noOpRecords.length === 1 && noOpRecords[0].image_url === noOpPlan.destination_url) applyAction = 'NO_OP';
   if (apply) {
-    const expectedPlan = (plan: typeof plans[number]) => collisionCount === 0
-      && plan.product_id === 37
-      && plan.source_relative === 'running-shoes/hoka-clifton-9-main.webp'
-      && plan.source_hash === '96c3a8e8abb78182779732edf0ed63c096d9825c5724ff5c1949f90954003d84';
-    const insertPlan = pendingPlans.length === 1 ? pendingPlans[0] : undefined;
-    const noOpPlan = pendingPlans.length === 0 && plans.length === 1 && plans[0].already_present ? plans[0] : undefined;
+    const source = filesByPath.get('running-shoes/hoka-clifton-9-main.webp');
 
-    if (insertPlan && expectedPlan(insertPlan) && (plannedCopies === 0 || plannedCopies === 1)) {
+    if (applyAction === 'INSERT' && insertPlan) {
       if (plannedCopies === 0) await assertValidExistingDestination(insertPlan);
-      const source = filesByPath.get('running-shoes/hoka-clifton-9-main.webp');
       if (!source || createHash('sha256').update(await fs.readFile(source.absolute)).digest('hex') !== insertPlan.source_hash) throw new Error('GUARDED_APPLY_ABORT source SHA-256 changed');
-    } else if (noOpPlan && expectedPlan(noOpPlan)) {
+    } else if (applyAction === 'NO_OP' && noOpPlan) {
       await assertValidExistingDestination(noOpPlan);
+      if (!source || createHash('sha256').update(await fs.readFile(source.absolute)).digest('hex') !== noOpPlan.source_hash) throw new Error('GUARDED_APPLY_ABORT source SHA-256 changed');
     } else {
       throw new Error(`GUARDED_APPLY_ABORT expected verified=1, ambiguous=0, and either one guarded insert with planned_copies=0|1 or one valid no-op for Product 37; got verified=${candidates.length} planned_inserts=${pendingPlans.length} planned_copies=${plannedCopies} already_present=${plans.length - pendingPlans.length} ambiguous=${collisionCount}`);
     }
   }
-  const isNoOpApply = apply && pendingPlans.length === 0 && plans.length === 1 && plans[0].already_present;
-  let backupPath: string | null = null;
-  if (!isNoOpApply) {
-    backupPath = path.join(backupRoot, `bootstrap-plan-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
-    await fs.mkdir(backupRoot, { recursive: true });
-    await fs.writeFile(backupPath, JSON.stringify({ created_at: new Date().toISOString(), mode: apply ? 'apply' : 'dry-run', legacy_root: legacyRoot, insert_plan: pendingPlans, verified: candidates.length, ambiguous: collisionCount, missing_products: missingProducts.length, unused_files: unusedFiles.map((file) => file.relative) }, null, 2), 'utf8');
-  }
+  const pendingMutation = applyAction === 'INSERT' ? 1 : applyAction === 'NO_OP' ? 0 : pendingPlans.length;
+  const printReport = (counts: Awaited<ReturnType<typeof readCounts>>, backupPath: string | null) => console.log(`PRODUCT_IMAGE_BOOTSTRAP ${JSON.stringify({
+    mode: apply ? 'apply' : 'dry-run', apply_action: applyAction, pending_mutation: pendingMutation,
+    products_total: products.length, legacy_files_total: files.length, verified: candidates.length, ambiguous: collisionCount,
+    missing_products: missingProducts.length, unused_files: unusedFiles.length, collision_count: collisionCount,
+    planned_inserts: pendingPlans.length, planned_copies: plannedCopies, already_present: plans.length - pendingPlans.length,
+    backup_path: backupPath, sample_verified_mappings: verifiedSamples, sample_ambiguous_mappings: ambiguousSamples, final_counts: counts,
+  })}`);
 
-  if (apply) {
-    const plan = pendingPlans[0];
+  if (!apply || applyAction === 'NO_OP') {
+    printReport(await readCounts(pool), null);
+    return;
+  }
+  if (applyAction !== 'INSERT' || !insertPlan || pendingPlans.length !== 1) throw new Error('GUARDED_APPLY_ABORT invalid guarded apply state');
+
+  let backupPath: string | null = null;
+  backupPath = path.join(backupRoot, `bootstrap-plan-${new Date().toISOString().replace(/[:.]/g, '-')}.json`);
+  await fs.mkdir(backupRoot, { recursive: true });
+  await fs.writeFile(backupPath, JSON.stringify({ created_at: new Date().toISOString(), mode: 'apply', legacy_root: legacyRoot, insert_plan: pendingPlans, verified: candidates.length, ambiguous: collisionCount, missing_products: missingProducts.length, unused_files: unusedFiles.map((file) => file.relative) }, null, 2), 'utf8');
+
+  {
+    const plan = insertPlan;
     const destinationExisted = await fileExists(plan.destination_path);
     if (destinationExisted) {
       await assertValidExistingDestination(plan);
@@ -176,24 +199,7 @@ async function main(): Promise<void> {
     }
   }
 
-  const counts = (await pool.request().query(`SELECT (SELECT COUNT(*) FROM dbo.Products) AS products,(SELECT COUNT(*) FROM dbo.ProductVariants) AS product_variants,(SELECT COUNT(*) FROM dbo.Inventory) AS inventory,(SELECT COUNT(*) FROM dbo.ProductImages) AS product_images,(SELECT COUNT(*) FROM dbo.Products p WHERE NOT EXISTS (SELECT 1 FROM dbo.ProductImages pi WHERE pi.product_id=p.id)) AS products_without_images,(SELECT COUNT(*) FROM dbo.ProductImages pi WHERE NOT EXISTS (SELECT 1 FROM dbo.Products p WHERE p.id=pi.product_id)) AS orphan_images,(SELECT COUNT(*) FROM (SELECT product_id FROM dbo.ProductImages WHERE is_primary=1 GROUP BY product_id HAVING COUNT(*)>1) x) AS multiple_primary,(SELECT COUNT(*) FROM dbo.ProductImages WHERE image_url LIKE '/media/%') AS media_records,(SELECT COUNT(*) FROM dbo.ProductImages WHERE image_url LIKE '/uploads/%') AS upload_records,(SELECT COUNT(*) FROM dbo.ProductImages WHERE image_url LIKE '/image/%') AS image_records`)).recordset[0];
-  console.log(`PRODUCT_IMAGE_BOOTSTRAP ${JSON.stringify({
-    mode: apply ? 'apply' : 'dry-run',
-    products_total: products.length,
-    legacy_files_total: files.length,
-    verified: candidates.length,
-    ambiguous: collisionCount,
-    missing_products: missingProducts.length,
-    unused_files: unusedFiles.length,
-    collision_count: collisionCount,
-    planned_inserts: pendingPlans.length,
-    planned_copies: plannedCopies,
-    already_present: plans.length - pendingPlans.length,
-    backup_path: backupPath,
-    sample_verified_mappings: verifiedSamples,
-    sample_ambiguous_mappings: ambiguousSamples,
-    final_counts: counts,
-  })}`);
+  printReport(await readCounts(pool), backupPath);
 }
 
 main().catch((error: unknown) => { console.error('PRODUCT_IMAGE_BOOTSTRAP_FAILED', error instanceof Error ? error.message : String(error)); process.exitCode = 1; }).finally(closePool);
