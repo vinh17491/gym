@@ -30,6 +30,7 @@ import bookingRoutes from './modules/bookings/bookings.routes';
 import productRoutes from './modules/products/products.routes';
 import mediaRoutes from './modules/media/media.routes';
 import adminProductRoutes from './modules/admin-products/admin-products.routes';
+import adminCatalogRoutes from './modules/admin-catalog/admin-catalog.routes';
 import path from 'path';
 
 const app = express();
@@ -94,6 +95,7 @@ app.use('/api/exercises', exercisesRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/products', productRoutes);
 app.use('/api/admin/products', adminProductRoutes);
+app.use('/api/admin', adminCatalogRoutes);
 app.use('/api/media', mediaRoutes);
 
 // CSRF protection for state-changing routes

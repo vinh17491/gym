@@ -56,6 +56,12 @@ async function assertCategory(request: sql.Request, categoryId: number) {
   if (!result.recordset[0]) throw new AppError(400, 'category_id does not reference an active category');
 }
 
+async function assertBrand(request: sql.Request, brandId: number | null) {
+  if (brandId === null) return;
+  const result = await request.input('validatedBrandId', sql.Int, brandId).query('SELECT id FROM dbo.Brands WHERE id=@validatedBrandId AND is_active=1');
+  if (!result.recordset[0]) throw new AppError(400, 'brand_id does not reference an active brand');
+}
+
 async function removeLocalFile(imageUrl: string) {
   if (!imageUrl.startsWith('/uploads/products/')) return;
   const relative = imageUrl.slice('/uploads/products/'.length).replace(/\//g, path.sep);
@@ -114,6 +120,7 @@ export const adminProductsService = {
     try {
       const request = tx.request().input('excludeId', sql.Int, -1);
       await assertCategory(request, Number(input.category_id));
+      await assertBrand(tx.request(), input.brand_id ?? null);
       const slug = await uniqueSlug(request, input.product_name!.trim());
       const duplicate = await tx.request().input('sku', sql.NVarChar, input.sku!.trim()).query('SELECT id FROM dbo.ProductVariants WHERE sku=@sku');
       if (duplicate.recordset[0]) throw new AppError(409, 'SKU already exists');
@@ -126,27 +133,27 @@ export const adminProductsService = {
           OUTPUT INSERTED.id VALUES(@name,@slug,@description,@sku,@price,@salePrice,@stock,@brandId,@categoryId,@active,@featured,@sale,SYSUTCDATETIME(),SYSUTCDATETIME())`);
       const productId = inserted.recordset[0].id;
       const variant = await tx.request().input('productId', productId).input('sku', input.sku!.trim()).input('price', input.price).input('salePrice', input.sale_price ?? null)
-        .query(`INSERT dbo.ProductVariants(product_id,variant_name,sku,price,sale_price,is_active,created_at,updated_at) OUTPUT INSERTED.id VALUES(@productId,N'Default',@sku,@price,@salePrice,1,SYSUTCDATETIME(),SYSUTCDATETIME())`);
+        .query(`INSERT dbo.ProductVariants(product_id,variant_name,sku,price,sale_price,is_active,is_default,created_at,updated_at) OUTPUT INSERTED.id VALUES(@productId,N'Default',@sku,@price,@salePrice,1,1,SYSUTCDATETIME(),SYSUTCDATETIME())`);
       await tx.request().input('variantId', variant.recordset[0].id).input('stock', input.stock).query('INSERT dbo.Inventory(variant_id,on_hand,reserved,last_restocked,updated_at) VALUES(@variantId,@stock,0,SYSUTCDATETIME(),SYSUTCDATETIME())');
       await tx.commit(); return this.get(productId);
     } catch (error) { await tx.rollback(); throw error; }
   },
 
   async update(id: number, input: AdminProductInput) {
+    if (input.stock !== undefined) throw new AppError(400, 'Stock must be changed through inventory adjustment API');
     validate(input, true);
     const existing = await this.get(id);
-    const merged = { product_name: input.product_name?.trim() ?? existing.product_name, description: input.description === undefined ? existing.description : input.description?.trim() || null, sku: input.sku?.trim() ?? existing.display_variant.sku, price: input.price ?? existing.display_variant.price, sale_price: input.sale_price === undefined ? existing.display_variant.sale_price : input.sale_price, stock: input.stock ?? existing.display_variant.available, brand_id: input.brand_id === undefined ? existing.brand_id : input.brand_id, category_id: input.category_id ?? existing.category_id, is_active: input.is_active ?? existing.is_active, is_featured: input.is_featured ?? existing.is_featured, is_on_sale: input.is_on_sale ?? existing.is_on_sale };
+    const merged = { product_name: input.product_name?.trim() ?? existing.product_name, description: input.description === undefined ? existing.description : input.description?.trim() || null, sku: input.sku?.trim() ?? existing.display_variant.sku, price: input.price ?? existing.display_variant.price, sale_price: input.sale_price === undefined ? existing.display_variant.sale_price : input.sale_price, brand_id: input.brand_id === undefined ? existing.brand_id : input.brand_id, category_id: input.category_id ?? existing.category_id, is_active: input.is_active ?? existing.is_active, is_featured: input.is_featured ?? existing.is_featured, is_on_sale: input.is_on_sale ?? existing.is_on_sale };
     validate(merged);
     const pool = await getPool(); const tx = pool.transaction(); await tx.begin();
     try {
-      const slugRequest = tx.request().input('excludeId', id); await assertCategory(slugRequest, Number(merged.category_id));
+      const slugRequest = tx.request().input('excludeId', id); await assertCategory(slugRequest, Number(merged.category_id)); await assertBrand(tx.request(), merged.brand_id);
       const slug = await uniqueSlug(slugRequest, merged.product_name, id);
       const duplicate = await tx.request().input('sku', merged.sku).input('variantId', existing.display_variant.id).query('SELECT id FROM dbo.ProductVariants WHERE sku=@sku AND id<>@variantId');
       if (duplicate.recordset[0]) throw new AppError(409, 'SKU already exists');
       await tx.request().input('id', id).input('name', merged.product_name).input('slug', slug).input('description', merged.description).input('brandId', merged.brand_id).input('categoryId', merged.category_id).input('active', merged.is_active).input('featured', merged.is_featured).input('sale', merged.is_on_sale)
         .query('UPDATE dbo.Products SET product_name=@name,slug=@slug,description=@description,brand_id=@brandId,category_id=@categoryId,is_active=@active,is_featured=@featured,is_on_sale=@sale,updated_at=SYSUTCDATETIME() WHERE id=@id');
       await tx.request().input('id', existing.display_variant.id).input('sku', merged.sku).input('price', merged.price).input('salePrice', merged.sale_price).query('UPDATE dbo.ProductVariants SET sku=@sku,price=@price,sale_price=@salePrice,updated_at=SYSUTCDATETIME() WHERE id=@id');
-      await tx.request().input('variantId', existing.display_variant.id).input('stock', merged.stock).query('UPDATE dbo.Inventory SET on_hand=@stock,updated_at=SYSUTCDATETIME() WHERE variant_id=@variantId');
       await tx.commit(); return this.get(id);
     } catch (error) { await tx.rollback(); throw error; }
   },
