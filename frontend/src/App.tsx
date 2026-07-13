@@ -38,6 +38,9 @@ import WorkoutPrograms from './pages/exercises/WorkoutPrograms';
 import ProductsListPage from './pages/products/ProductsListPage';
 import ProductDetailPage from './pages/products/ProductDetailPage';
 import AdminProductsPage from './pages/admin/AdminProductsPage';
+import AdminCatalogPage from './pages/admin/AdminCatalogPage';
+import AdminInventoryPage from './pages/admin/AdminInventoryPage';
+import AdminProductVariantsPage from './pages/admin/AdminProductVariantsPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -97,6 +100,10 @@ export default function App() {
           <Route path="/admin/revenue" element={<AdminRoute><RevenuePage /></AdminRoute>} />
           <Route path="/admin/backup" element={<AdminRoute><BackupPage /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminProductsPage /></AdminRoute>} />
+          <Route path="/admin/categories" element={<AdminRoute><AdminCatalogPage entity="categories" /></AdminRoute>} />
+          <Route path="/admin/brands" element={<AdminRoute><AdminCatalogPage entity="brands" /></AdminRoute>} />
+          <Route path="/admin/inventory" element={<AdminRoute><AdminInventoryPage /></AdminRoute>} />
+          <Route path="/admin/products/:productId/variants" element={<AdminRoute><AdminProductVariantsPage /></AdminRoute>} />
           <Route path="/coach" element={<CoachDashboard />} />
         </Route>
 

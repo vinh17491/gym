@@ -17,6 +17,9 @@ const navLinks = [
 const adminLinks = [
   { to: '/admin', icon: Shield, label: 'Admin' },
   { to: '/admin/products', icon: ShoppingBag, label: 'Products' },
+  { to: '/admin/categories', icon: ShoppingBag, label: 'Categories' },
+  { to: '/admin/brands', icon: Star, label: 'Brands' },
+  { to: '/admin/inventory', icon: Database, label: 'Inventory' },
   { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
   { to: '/admin/revenue', icon: Wallet, label: 'Revenue' },
   { to: '/admin/audit', icon: Database, label: 'Audit Log' },
