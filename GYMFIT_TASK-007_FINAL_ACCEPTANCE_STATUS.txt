@@ -1,0 +1,71 @@
+GYMFIT TASK-007 FINAL ACCEPTANCE STATUS
+Date/time: 2026-07-14 Asia/Saigon
+
+Previously verified acceptance
+- Real Gmail delivery, 4 flows: PASS.
+- Real Bank configuration: PASS.
+- QR HTTP response: PASS.
+- Authenticated Customer browser checkout with a non-default Variant: PASS.
+
+Isolated Admin browser acceptance
+- Database: GYMFIT_DB_TASK007_ADMIN_BROWSER_20260714155143.
+- Restored from the verified canonical backup: PASS.
+- Database identity verified before mutation: PASS.
+- Acceptance Admin and Member used production bcrypt hashing: PASS.
+- Isolated Order included OrderItems, PaymentStatusHistory and OrderStatusHistory: PASS.
+- No acceptance mutation was performed on canonical GYMFIT_DB: PASS.
+
+Temporary services
+- Backend on dedicated port with isolated DB process environment: PASS.
+- Frontend on dedicated port with proxy to the temporary backend: PASS.
+- Backend health: PASS.
+- Frontend HTTP: PASS.
+- Acceptance Admin login API: PASS.
+
+Authenticated Admin browser flow
+- Normal Admin UI login: PASS.
+- Token/session storage and refresh persistence: PASS.
+- Admin route navigation and guard: PASS.
+- Admin Orders list render: PASS.
+- Search, status filter, sort direction and page-size controls: PASS.
+- Acceptance Order number, statuses, total and created time: PASS.
+- Order Detail opened from list UI: PASS.
+- Customer, shipping, items, pricing, provider and reference sections: PASS.
+- Payment History and Order Status History remain separate: PASS.
+- Payment history fields (previous/new status, actor, note, reference, time): PASS.
+- Bank/Gmail incomplete-configuration warnings absent: PASS.
+- Payment PENDING -> PAID through Admin UI: PASS; exactly one history row added.
+- Order PENDING -> CONFIRMED through Admin UI: PASS; exactly one history row added.
+- Inventory remained on_hand=120 and reserved=1 across confirmation: PASS.
+- No application console/runtime error: PASS. React Router v7 future-flag warnings only.
+
+Authorization
+- Admin /admin/orders: PASS.
+- Member /admin/orders redirected to /dashboard: PASS.
+- Member Admin Order API: 403 PASS.
+- Guest Admin Order API: 401 PASS.
+
+Source fix and final checks
+- Empty Admin Order search is now omitted from query parameters instead of failing min-length validation.
+- Backend production build / TypeScript: PASS.
+- Backend lint: PASS with 0 errors (58 pre-existing warnings).
+- Frontend explicit TypeScript noEmit: PASS.
+- Frontend production build: PASS (non-blocking chunk-size warning).
+- git diff --check: PASS.
+
+Cleanup and canonical integrity
+- Controlled browser session finalized: PASS.
+- Temporary backend/frontend stopped: PASS.
+- Isolated Admin acceptance database dropped: PASS.
+- Temporary acceptance artifacts removed: PASS.
+- Canonical DB_NAME: GYMFIT_DB.
+- Products: 167.
+- ProductVariants: 167.
+- Inventory: 167.
+- ProductImages: 1.
+- Orders: 0.
+- PaymentStatusHistory: 0.
+- No Acceptance Admin, Order or history exists in canonical DB: PASS.
+
+Final verdict
+- FULL_TASK_007_COMPLETE

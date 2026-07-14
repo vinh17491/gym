@@ -12,6 +12,8 @@ export interface ExerciseDBExercise {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  bodyPart?: string;
+  media?: Array<{ thumbnailUrl?: string; imageUrl?: string }>;
 }
 
 export interface ExerciseFilter {

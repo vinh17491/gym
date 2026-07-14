@@ -1,23 +1,49 @@
-import { useEffect, useState, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useEffect, useState, useCallback } from "react";
+import { useParams, Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import {
-  ShoppingCart, Heart, Star, ZoomIn, ChevronLeft, ChevronRight,
-  Shield, Truck, RefreshCw, CheckCircle, X, Minus, Plus, StarHalf
-} from 'lucide-react';
-import { cn, formatCurrency } from '../../lib/utils';
-import api from '../../api/axios';
-import { useAuthStore } from '../../stores/authStore';
-import { useProductsStore } from '../../stores/productsStore';
-import type { Product, ProductDetailResponse, ProductImage } from '../../types/product';
-import SafeProductImage from '../../components/products/ProductImage';
-import { getPrimaryProductImage, getProductImageUrl, PRODUCT_PLACEHOLDER } from '../../lib/productImages';
+  ShoppingCart,
+  Heart,
+  Star,
+  ZoomIn,
+  ChevronLeft,
+  ChevronRight,
+  Shield,
+  Truck,
+  RefreshCw,
+  CheckCircle,
+  X,
+  Minus,
+  Plus,
+  StarHalf,
+} from "lucide-react";
+import { cn, formatCurrency } from "../../lib/utils";
+import api from "../../api/axios";
+import { useAuthStore } from "../../stores/authStore";
+import { useProductsStore } from "../../stores/productsStore";
+import type {
+  Product,
+  ProductDetail,
+  ProductDetailResponse,
+  ProductImage,
+} from "../../types/product";
+import SafeProductImage from "../../components/products/ProductImage";
+import {
+  getPrimaryProductImage,
+  getProductImageUrl,
+  PRODUCT_PLACEHOLDER,
+} from "../../lib/productImages";
 
 /* ──────────────────────────────── Types ──────────────────────────────── */
 /* ──────────────────────────────── Helpers ──────────────────────────────── */
 const discountPct = (p: Product) =>
-  p.display_variant.sale_price != null && p.display_variant.sale_price < p.display_variant.price
-    ? Math.round(((p.display_variant.price - p.display_variant.sale_price) / p.display_variant.price) * 100)
+  p.display_variant.sale_price != null &&
+  p.display_variant.sale_price < p.display_variant.price
+    ? Math.round(
+        ((p.display_variant.price - p.display_variant.sale_price) /
+          p.display_variant.price) *
+          100,
+      )
     : 0;
 
 const primaryImageUrl = getPrimaryProductImage;
@@ -31,8 +57,22 @@ const Stars = ({ rating, size = 16 }: { rating: number; size?: number }) => {
   return (
     <div className="flex items-center gap-0.5">
       {Array.from({ length: 5 }).map((_, i) => {
-        if (i < full) return <Star key={i} size={size} className="fill-yellow-400 text-yellow-400" />;
-        if (i === full && hasHalf) return <StarHalf key={i} size={size} className="fill-yellow-400 text-yellow-400" />;
+        if (i < full)
+          return (
+            <Star
+              key={i}
+              size={size}
+              className="fill-yellow-400 text-yellow-400"
+            />
+          );
+        if (i === full && hasHalf)
+          return (
+            <StarHalf
+              key={i}
+              size={size}
+              className="fill-yellow-400 text-yellow-400"
+            />
+          );
         return <Star key={i} size={size} className="text-gray-600" />;
       })}
     </div>
@@ -41,7 +81,9 @@ const Stars = ({ rating, size = 16 }: { rating: number; size?: number }) => {
 
 /* Image Gallery – thumbnails, zoom, lightbox */
 const ImageGallery = ({ images }: { images: ProductImage[] }) => {
-  const allImages = images.length ? images.map(image => getProductImageUrl(image.image_url)) : [PRODUCT_PLACEHOLDER];
+  const allImages = images.length
+    ? images.map((image) => getProductImageUrl(image.image_url))
+    : [PRODUCT_PLACEHOLDER];
   const [activeIdx, setActiveIdx] = useState(0);
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [zoomed, setZoomed] = useState(false);
@@ -50,12 +92,13 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
   useEffect(() => {
     if (!lightboxOpen) return;
     const handler = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setLightboxOpen(false);
-      if (e.key === 'ArrowLeft') setActiveIdx(i => Math.max(0, i - 1));
-      if (e.key === 'ArrowRight') setActiveIdx(i => Math.min(allImages.length - 1, i + 1));
+      if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowLeft") setActiveIdx((i) => Math.max(0, i - 1));
+      if (e.key === "ArrowRight")
+        setActiveIdx((i) => Math.min(allImages.length - 1, i + 1));
     };
-    window.addEventListener('keydown', handler);
-    return () => window.removeEventListener('keydown', handler);
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lightboxOpen]);
 
@@ -72,8 +115,8 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
           src={allImages[activeIdx]}
           alt=""
           className={cn(
-            'w-full h-full object-cover transition-transform duration-500',
-            zoomed && 'scale-125'
+            "w-full h-full object-cover transition-transform duration-500",
+            zoomed && "scale-125",
           )}
         />
         <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
@@ -87,14 +130,20 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
         {allImages.length > 1 && (
           <>
             <button
-              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.max(0, i - 1)); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx((i) => Math.max(0, i - 1));
+              }}
               className="absolute left-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
               disabled={activeIdx === 0}
             >
               <ChevronLeft size={20} />
             </button>
             <button
-              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.min(allImages.length - 1, i + 1)); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx((i) => Math.min(allImages.length - 1, i + 1));
+              }}
               className="absolute right-2 top-1/2 -translate-y-1/2 bg-black/50 hover:bg-black/70 backdrop-blur-sm rounded-full p-1.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
               disabled={activeIdx === allImages.length - 1}
             >
@@ -112,11 +161,17 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
               key={i}
               onClick={() => setActiveIdx(i)}
               className={cn(
-                'flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200',
-                i === activeIdx ? 'border-orange-500 ring-1 ring-orange-500/30' : 'border-white/10 hover:border-white/30'
+                "flex-shrink-0 w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-200",
+                i === activeIdx
+                  ? "border-orange-500 ring-1 ring-orange-500/30"
+                  : "border-white/10 hover:border-white/30",
               )}
             >
-              <SafeProductImage src={img} alt="" className="w-full h-full object-cover" />
+              <SafeProductImage
+                src={img}
+                alt=""
+                className="w-full h-full object-cover"
+              />
             </button>
           ))}
         </div>
@@ -145,7 +200,10 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
             </div>
 
             <button
-              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.max(0, i - 1)); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx((i) => Math.max(0, i - 1));
+              }}
               className="absolute left-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 rounded-full p-3 text-white transition-colors"
               disabled={activeIdx === 0}
             >
@@ -161,12 +219,22 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
               src={allImages[activeIdx]}
               alt=""
               className="max-w-full max-h-[85vh] object-contain rounded-2xl"
-              onClick={e => e.stopPropagation()}
-              onError={e => { if (e.currentTarget.src !== new URL(PRODUCT_PLACEHOLDER, window.location.href).href) e.currentTarget.src = PRODUCT_PLACEHOLDER; else e.currentTarget.onerror = null; }}
+              onClick={(e) => e.stopPropagation()}
+              onError={(e) => {
+                if (
+                  e.currentTarget.src !==
+                  new URL(PRODUCT_PLACEHOLDER, window.location.href).href
+                )
+                  e.currentTarget.src = PRODUCT_PLACEHOLDER;
+                else e.currentTarget.onerror = null;
+              }}
             />
 
             <button
-              onClick={e => { e.stopPropagation(); setActiveIdx(i => Math.min(allImages.length - 1, i + 1)); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                setActiveIdx((i) => Math.min(allImages.length - 1, i + 1));
+              }}
               className="absolute right-4 top-1/2 -translate-y-1/2 bg-white/10 hover:bg-white/20 rounded-full p-3 text-white transition-colors"
               disabled={activeIdx === allImages.length - 1}
             >
@@ -178,13 +246,22 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
               {allImages.map((img, i) => (
                 <button
                   key={i}
-                  onClick={e => { e.stopPropagation(); setActiveIdx(i); }}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveIdx(i);
+                  }}
                   className={cn(
-                    'w-12 h-12 rounded-lg overflow-hidden border-2 transition-all',
-                    i === activeIdx ? 'border-orange-500' : 'border-transparent opacity-60 hover:opacity-100'
+                    "w-12 h-12 rounded-lg overflow-hidden border-2 transition-all",
+                    i === activeIdx
+                      ? "border-orange-500"
+                      : "border-transparent opacity-60 hover:opacity-100",
                   )}
                 >
-                  <SafeProductImage src={img} alt="" className="w-full h-full object-cover" />
+                  <SafeProductImage
+                    src={img}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
                 </button>
               ))}
             </div>
@@ -197,24 +274,32 @@ const ImageGallery = ({ images }: { images: ProductImage[] }) => {
 
 /* Pill selector (flavour / size / colour) */
 const PillSelect = ({
-  label, options, value, onChange
+  label,
+  options,
+  value,
+  onChange,
 }: {
-  label: string; options: string[]; value?: string; onChange: (v: string) => void;
+  label: string;
+  options: string[];
+  value?: string;
+  onChange: (v: string) => void;
 }) => {
   if (!options || options.length === 0) return null;
   return (
     <div>
-      <p className="text-sm font-medium text-gray-400 mb-2 font-body">{label}</p>
+      <p className="text-sm font-medium text-gray-400 mb-2 font-body">
+        {label}
+      </p>
       <div className="flex flex-wrap gap-2">
-        {options.map(opt => (
+        {options.map((opt) => (
           <button
             key={opt}
             onClick={() => onChange(opt)}
             className={cn(
-              'px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 font-body',
+              "px-4 py-1.5 rounded-full text-sm font-medium border transition-all duration-200 font-body",
               value === opt
-                ? 'border-orange-500 bg-orange-500/10 text-orange-400'
-                : 'border-white/10 text-gray-300 hover:border-white/30 hover:text-white'
+                ? "border-orange-500 bg-orange-500/10 text-orange-400"
+                : "border-white/10 text-gray-300 hover:border-white/30 hover:text-white",
             )}
           >
             {opt}
@@ -228,19 +313,24 @@ const PillSelect = ({
 /* Trust badge row */
 const TrustBadges = () => {
   const items = [
-    { icon: Truck, label: 'Free Shipping', sub: 'Orders over $50' },
-    { icon: RefreshCw, label: 'Easy Returns', sub: '30-day return' },
-    { icon: Shield, label: 'Secure Checkout', sub: 'SSL encrypted' },
+    { icon: Truck, label: "Free Shipping", sub: "Orders over $50" },
+    { icon: RefreshCw, label: "Easy Returns", sub: "30-day return" },
+    { icon: Shield, label: "Secure Checkout", sub: "SSL encrypted" },
   ];
   return (
     <div className="grid grid-cols-3 gap-3">
       {items.map(({ icon: Icon, label, sub }) => (
-        <div key={label} className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl p-3">
+        <div
+          key={label}
+          className="flex items-center gap-2 bg-white/[0.03] border border-white/[0.06] rounded-xl p-3"
+        >
           <div className="flex-shrink-0 w-9 h-9 rounded-lg bg-orange-500/10 flex items-center justify-center">
             <Icon size={18} className="text-orange-400" />
           </div>
           <div>
-            <p className="text-xs font-semibold text-white font-body">{label}</p>
+            <p className="text-xs font-semibold text-white font-body">
+              {label}
+            </p>
             <p className="text-[10px] text-gray-500 font-body">{sub}</p>
           </div>
         </div>
@@ -250,20 +340,41 @@ const TrustBadges = () => {
 };
 
 /* Frequently Bought Together */
-const FBTItem = ({ p, checked, onToggle }: { p: Product; checked: boolean; onToggle: () => void }) => (
+const FBTItem = ({
+  p,
+  checked,
+  onToggle,
+}: {
+  p: Product;
+  checked: boolean;
+  onToggle: () => void;
+}) => (
   <label className="flex items-center gap-3 bg-white/[0.03] border border-white/[0.08] rounded-xl p-3 cursor-pointer hover:bg-white/[0.06] transition-colors">
-    <input type="checkbox" checked={checked} onChange={onToggle} className="accent-orange-500 w-4 h-4" />
-    <SafeProductImage src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+    <input
+      type="checkbox"
+      checked={checked}
+      onChange={onToggle}
+      className="accent-orange-500 w-4 h-4"
+    />
+    <SafeProductImage
+      src={primaryImageUrl(p)}
+      alt=""
+      className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+    />
     <div className="flex-1 min-w-0">
-      <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
-      <p className="text-xs text-gray-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
+      <p className="text-sm font-medium text-white truncate font-body">
+        {p.product_name}
+      </p>
+      <p className="text-xs text-gray-400 font-body">
+        {formatCurrency(p.display_variant.effective_price)}
+      </p>
     </div>
   </label>
 );
 
 /* ──────────────────────────────── Loading Skeleton ──────────────────────────────── */
 const Skeleton = ({ className }: { className?: string }) => (
-  <div className={cn('animate-pulse bg-white/[0.06] rounded-xl', className)} />
+  <div className={cn("animate-pulse bg-white/[0.06] rounded-xl", className)} />
 );
 
 const LoadingSkeleton = () => (
@@ -357,12 +468,15 @@ const LoadingSkeleton = () => (
 /* ──────────────────────────────── Main Component ──────────────────────────────── */
 export default function ProductDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [product, setProduct] = useState<Product | null>(null);
+  const [product, setProduct] = useState<ProductDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<Product[]>([]);
   const [quantity, setQuantity] = useState(1);
-  const [activeTab, setActiveTab] = useState('description');
+  const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
+    null,
+  );
+  const [activeTab, setActiveTab] = useState("description");
   const [addedToCart, setAddedToCart] = useState(false);
   const [fbtChecked, setFbtChecked] = useState<boolean[]>([]);
 
@@ -376,10 +490,16 @@ export default function ProductDetailPage() {
       const res = await api.get<ProductDetailResponse>(`/products/${id}`);
       const p = res.data.data || null;
       setProduct(p);
+      const variants = p?.variants || [];
+      const selected =
+        variants.find((variant) => variant.id === p?.display_variant?.id) ||
+        variants.find((variant) => variant.is_default) ||
+        variants[0];
+      setSelectedVariantId(selected?.id ?? null);
       setRelatedProducts(res.data.related_products || []);
       setError(null);
-    } catch (err: any) {
-      setError(err?.message || 'Product not found');
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Product not found");
     } finally {
       setLoading(false);
     }
@@ -390,84 +510,108 @@ export default function ProductDetailPage() {
   }, [id, fetchProduct]);
 
   const handleAddToCart = async () => {
-    if (!product) return;
-    await addToCart(product.id, quantity);
+    if (!product || selectedVariantId === null) return;
+    addToCart(product.id, selectedVariantId, quantity);
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2000);
   };
 
   const handleWishlist = () => {
-    if (!isAuthenticated) { window.location.href = '/login'; return; }
+    if (!isAuthenticated) {
+      window.location.href = "/login";
+      return;
+    }
     if (product) toggleWishlist(product.id);
   };
 
   /* ──── render ──── */
-    if (loading) {
-      return <LoadingSkeleton />;
-    }
+  if (loading) {
+    return <LoadingSkeleton />;
+  }
 
-    if (error || !product) {
-      return (
-        <div className="min-h-screen bg-[#020617] flex items-center justify-center relative">
-          <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
-          </div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="relative text-center max-w-md mx-auto px-4"
-          >
-            <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
-              <X size={36} className="text-red-400" />
-            </div>
-            <h1 className="text-2xl font-bold text-white mb-2 font-display">Product Not Found</h1>
-            <p className="text-gray-400 mb-6 font-body">{error || 'The product you\'re looking for doesn\'t exist or has been removed.'}</p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <button
-                onClick={fetchProduct}
-                className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-body"
-              >
-                Try Again
-              </button>
-              <Link
-                to="/products"
-                className="px-6 py-3 bg-white/5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 font-body"
-              >
-                Browse Products
-              </Link>
-            </div>
-          </motion.div>
+  if (error || !product) {
+    return (
+      <div className="min-h-screen bg-[#020617] flex items-center justify-center relative">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-40 -right-40 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
+          <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-green-500/10 rounded-full blur-3xl" />
         </div>
-      );
-    }
-    
-    const p = product;
-    const isOnSale = Boolean(
-    p.display_variant.sale_price != null && p.display_variant.sale_price < p.display_variant.price
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="relative text-center max-w-md mx-auto px-4"
+        >
+          <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center">
+            <X size={36} className="text-red-400" />
+          </div>
+          <h1 className="text-2xl font-bold text-white mb-2 font-display">
+            Product Not Found
+          </h1>
+          <p className="text-gray-400 mb-6 font-body">
+            {error ||
+              "The product you're looking for doesn't exist or has been removed."}
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <button
+              onClick={fetchProduct}
+              className="px-6 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl hover:from-orange-600 hover:to-orange-700 transition-all duration-200 font-body"
+            >
+              Try Again
+            </button>
+            <Link
+              to="/products"
+              className="px-6 py-3 bg-white/5 border border-white/10 text-gray-300 font-semibold rounded-xl hover:bg-white/10 transition-all duration-200 font-body"
+            >
+              Browse Products
+            </Link>
+          </div>
+        </motion.div>
+      </div>
     );
-    const discPct = discountPct(p);
-    const sampleReviews: Array<{
+  }
+  if (!product.display_variant) {
+    return (
+      <main className="mx-auto max-w-5xl p-8 text-white">
+        <Link className="text-orange-400" to="/products">
+          Quay lại sản phẩm
+        </Link>
+        <h1 className="mt-5 text-3xl font-bold">{product.product_name}</h1>
+        <p className="mt-4 text-white/70">{product.description}</p>
+        <p className="mt-6 rounded-xl bg-amber-500/10 p-4 text-amber-300">
+          Sản phẩm hiện không có lựa chọn khả dụng.
+        </p>
+      </main>
+    );
+  }
+
+  const selectedVariant =
+    product.variants?.find((variant) => variant.id === selectedVariantId) ??
+    null;
+  const p: Product = {
+    ...product,
+    display_variant: selectedVariant ?? product.display_variant,
+  };
+  const isOnSale = Boolean(
+    p.display_variant.sale_price != null &&
+    p.display_variant.sale_price < p.display_variant.price,
+  );
+  const discPct = discountPct(p);
+  const sampleReviews: Array<{
     user: string;
     rating: number;
     date: string;
     comment: string;
-    }> = [];
-    const fbtProducts = relatedProducts.slice(0, 2);
-    const fbtTotal =
+  }> = [];
+  const fbtProducts = relatedProducts.slice(0, 2);
+  const fbtTotal =
     p.display_variant.effective_price +
     fbtProducts.reduce(
       (total, item, index) =>
-        total +
-        (
-          fbtChecked[index]
-           ? item.display_variant.effective_price
-            : 0
-       ),
-      0
+        total + (fbtChecked[index] ? item.display_variant.effective_price : 0),
+      0,
     );
 
-    return (
+  return (
     <div className="min-h-screen bg-[#020617] relative">
       {/* ── Background gradient orbs ── */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
@@ -483,17 +627,34 @@ export default function ProductDetailPage() {
           animate={{ opacity: 1, y: 0 }}
           className="flex items-center gap-2 text-sm mb-6 font-body"
         >
-          <Link to="/" className="text-gray-500 hover:text-white transition-colors">Home</Link>
+          <Link
+            to="/"
+            className="text-gray-500 hover:text-white transition-colors"
+          >
+            Home
+          </Link>
           <span className="text-gray-600">/</span>
-          <Link to="/products" className="text-gray-500 hover:text-white transition-colors">Products</Link>
+          <Link
+            to="/products"
+            className="text-gray-500 hover:text-white transition-colors"
+          >
+            Products
+          </Link>
           <span className="text-gray-600">/</span>
           {p.category && (
             <>
-              <Link to={`/products?category=${p.category_slug || ''}`} className="text-gray-500 hover:text-white transition-colors">{p.category}</Link>
+              <Link
+                to={`/products?category=${p.category_slug || ""}`}
+                className="text-gray-500 hover:text-white transition-colors"
+              >
+                {p.category}
+              </Link>
               <span className="text-gray-600">/</span>
             </>
           )}
-          <span className="text-white/70 truncate max-w-[200px]">{p.product_name}</span>
+          <span className="text-white/70 truncate max-w-[200px]">
+            {p.product_name}
+          </span>
         </motion.nav>
 
         {/* ── Hero section ── */}
@@ -512,7 +673,11 @@ export default function ProductDetailPage() {
           <motion.div
             initial={{ opacity: 0, x: 40 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.5, delay: 0.1, ease: [0.25, 0.46, 0.45, 0.94] }}
+            transition={{
+              duration: 0.5,
+              delay: 0.1,
+              ease: [0.25, 0.46, 0.45, 0.94],
+            }}
             className="lg:col-span-5"
           >
             <div className="space-y-5">
@@ -532,8 +697,11 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-3">
                 <Stars rating={p.rating || 0} size={18} />
                 <span className="text-sm text-gray-400 font-body">
-                  {p.rating ? p.rating.toFixed(1) : '0.0'}
-                  <span className="text-gray-600"> ({p.review_count || 0} reviews)</span>
+                  {p.rating ? p.rating.toFixed(1) : "0.0"}
+                  <span className="text-gray-600">
+                    {" "}
+                    ({p.review_count || 0} reviews)
+                  </span>
                 </span>
               </div>
 
@@ -544,7 +712,9 @@ export default function ProductDetailPage() {
                 </span>
                 {isOnSale && p.display_variant.sale_price != null && (
                   <>
-                    <span className="text-xl text-gray-500 line-through font-body">{formatCurrency(p.display_variant.price)}</span>
+                    <span className="text-xl text-gray-500 line-through font-body">
+                      {formatCurrency(p.display_variant.price)}
+                    </span>
                     <span className="px-2.5 py-1 bg-green-500/15 text-green-400 text-xs font-bold rounded-lg font-body">
                       -{discPct}%
                     </span>
@@ -557,10 +727,60 @@ export default function ProductDetailPage() {
                 {p.description}
               </p>
 
-              {/* Variant pills */}
-              {p.display_variant.options.map(option => (
-                <div key={`${option.option_id}-${option.value_id}`} className="text-sm text-gray-300 font-body">
-                  <span className="text-gray-500">{option.option_name}:</span> {option.value}
+              {(p.variants?.length ?? 0) > 0 ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-400">Lựa chọn sản phẩm</p>
+                  <div className="flex flex-wrap gap-2">
+                    {p.variants?.map((variant) => (
+                      <button
+                        type="button"
+                        key={variant.id}
+                        disabled={variant.available <= 0}
+                        onClick={() => {
+                          setSelectedVariantId(variant.id);
+                          setQuantity((current) =>
+                            Math.max(
+                              1,
+                              Math.min(current, variant.available || 1),
+                            ),
+                          );
+                        }}
+                        className={cn(
+                          "rounded-xl border px-4 py-2 text-left",
+                          variant.id === selectedVariantId
+                            ? "border-orange-500 bg-orange-500/10"
+                            : "border-white/10",
+                          variant.available <= 0 &&
+                            "cursor-not-allowed opacity-50",
+                        )}
+                      >
+                        <span className="block font-medium">
+                          {variant.variant_name}
+                        </span>
+                        <span className="text-xs text-gray-400">
+                          {variant.sku} ·{" "}
+                          {variant.options
+                            .map((option) => option.value)
+                            .join(" / ") || "Mặc định"}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="rounded-xl bg-amber-500/10 p-4 text-amber-300">
+                  Sản phẩm hiện không có lựa chọn khả dụng.
+                </p>
+              )}
+
+              {/* Variant options */}
+              {p.display_variant.options.map((option) => (
+                <div
+                  key={`${option.option_id}-${option.value_id}`}
+                  className="text-sm text-gray-300 font-body"
+                >
+                  <span className="text-gray-500">{option.option_name}:</span>{" "}
+                  {option.value}
                 </div>
               ))}
 
@@ -568,7 +788,7 @@ export default function ProductDetailPage() {
               <div className="flex items-center gap-4">
                 <div className="flex items-center bg-white/[0.05] border border-white/[0.12] rounded-xl overflow-hidden">
                   <button
-                    onClick={() => setQuantity(q => Math.max(1, q - 1))}
+                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
                     disabled={quantity <= 1}
                     className="px-3 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
@@ -578,7 +798,11 @@ export default function ProductDetailPage() {
                     {quantity}
                   </span>
                   <button
-                    onClick={() => setQuantity(q => Math.min(p.display_variant.available, q + 1))}
+                    onClick={() =>
+                      setQuantity((q) =>
+                        Math.min(p.display_variant.available, q + 1),
+                      )
+                    }
                     disabled={quantity >= p.display_variant.available}
                     className="px-3 py-2.5 text-gray-400 hover:text-white hover:bg-white/5 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                   >
@@ -588,35 +812,54 @@ export default function ProductDetailPage() {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={p.display_variant.available <= 0}
+                  disabled={
+                    !selectedVariant || p.display_variant.available <= 0
+                  }
                   className={cn(
-                    'flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 font-body',
-                    p.display_variant.available <= 0
-                      ? 'bg-gray-800 text-gray-500 cursor-not-allowed'
+                    "flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-semibold transition-all duration-200 font-body",
+                    !selectedVariant || p.display_variant.available <= 0
+                      ? "bg-gray-800 text-gray-500 cursor-not-allowed"
                       : addedToCart
-                        ? 'bg-green-600 text-white'
-                        : 'bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98]'
+                        ? "bg-green-600 text-white"
+                        : "bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 active:scale-[0.98]",
                   )}
                 >
                   {p.display_variant.available <= 0 ? (
                     <>Out of Stock</>
                   ) : addedToCart ? (
-                    <><CheckCircle size={20} /> Added!</>
+                    <>
+                      <CheckCircle size={20} /> Added!
+                    </>
                   ) : (
-                    <><ShoppingCart size={20} /> Add to Cart</>
+                    <>
+                      <ShoppingCart size={20} /> Add to Cart
+                    </>
                   )}
                 </button>
+                {addedToCart && (
+                  <div className="flex gap-2">
+                    <Link className="text-orange-400 underline" to="/cart">
+                      Xem giỏ hàng
+                    </Link>
+                    <Link className="text-emerald-400 underline" to="/checkout">
+                      Thanh toán
+                    </Link>
+                  </div>
+                )}
 
                 <button
                   onClick={handleWishlist}
                   className={cn(
-                    'p-3 rounded-xl border transition-all duration-200',
+                    "p-3 rounded-xl border transition-all duration-200",
                     inWishlist
-                      ? 'bg-red-500/10 border-red-500/30 text-red-400'
-                      : 'bg-white/[0.05] border-white/[0.12] text-gray-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5'
+                      ? "bg-red-500/10 border-red-500/30 text-red-400"
+                      : "bg-white/[0.05] border-white/[0.12] text-gray-400 hover:text-red-400 hover:border-red-500/30 hover:bg-red-500/5",
                   )}
                 >
-                  <Heart size={20} className={inWishlist ? 'fill-red-400' : ''} />
+                  <Heart
+                    size={20}
+                    className={inWishlist ? "fill-red-400" : ""}
+                  />
                 </button>
               </div>
 
@@ -640,7 +883,11 @@ export default function ProductDetailPage() {
                     Out of Stock
                   </span>
                 )}
-                {p.display_variant.sku && <span className="text-gray-600 ml-auto">SKU: {p.display_variant.sku}</span>}
+                {p.display_variant.sku && (
+                  <span className="text-gray-600 ml-auto">
+                    SKU: {p.display_variant.sku}
+                  </span>
+                )}
               </div>
 
               {/* Trust badges */}
@@ -659,7 +906,7 @@ export default function ProductDetailPage() {
         <motion.div
           initial={{ opacity: 0, y: 30 }}
           whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true, margin: '-80px' }}
+          viewport={{ once: true, margin: "-80px" }}
           transition={{ duration: 0.5 }}
           className="mt-14 lg:mt-20"
         >
@@ -667,19 +914,19 @@ export default function ProductDetailPage() {
             {/* Tab buttons */}
             <div className="flex border-b border-white/[0.08] overflow-x-auto">
               {[
-                { key: 'description', label: 'Description' },
-                { key: 'specifications', label: 'Specifications' },
-                { key: 'ingredients', label: 'Ingredients' },
-                { key: 'reviews', label: `Reviews (${p.review_count || 0})` },
-              ].map(tab => (
+                { key: "description", label: "Description" },
+                { key: "specifications", label: "Specifications" },
+                { key: "ingredients", label: "Ingredients" },
+                { key: "reviews", label: `Reviews (${p.review_count || 0})` },
+              ].map((tab) => (
                 <button
                   key={tab.key}
                   onClick={() => setActiveTab(tab.key)}
                   className={cn(
-                    'relative px-5 py-4 text-sm font-semibold whitespace-nowrap transition-colors font-body',
+                    "relative px-5 py-4 text-sm font-semibold whitespace-nowrap transition-colors font-body",
                     activeTab === tab.key
-                      ? 'text-orange-400'
-                      : 'text-gray-500 hover:text-gray-300'
+                      ? "text-orange-400"
+                      : "text-gray-500 hover:text-gray-300",
                   )}
                 >
                   {tab.label}
@@ -704,14 +951,22 @@ export default function ProductDetailPage() {
                   transition={{ duration: 0.2 }}
                 >
                   {/* ── Description ── */}
-                  {activeTab === 'description' && (
+                  {activeTab === "description" && (
                     <div className="prose prose-invert max-w-none">
-                      <p className="text-gray-300 leading-relaxed font-body">{p.description}</p>
+                      <p className="text-gray-300 leading-relaxed font-body">
+                        {p.description}
+                      </p>
                       {p.features && p.features.length > 0 && (
                         <ul className="mt-4 space-y-2">
                           {p.features.map((f, i) => (
-                            <li key={i} className="flex items-start gap-2 text-gray-400 font-body">
-                              <CheckCircle size={16} className="text-green-400 mt-0.5 flex-shrink-0" />
+                            <li
+                              key={i}
+                              className="flex items-start gap-2 text-gray-400 font-body"
+                            >
+                              <CheckCircle
+                                size={16}
+                                className="text-green-400 mt-0.5 flex-shrink-0"
+                              />
                               <span>{f}</span>
                             </li>
                           ))}
@@ -721,53 +976,89 @@ export default function ProductDetailPage() {
                   )}
 
                   {/* ── Specifications ── */}
-                  {activeTab === 'specifications' && (
+                  {activeTab === "specifications" && (
                     <div>
-                      {p.specifications && Object.keys(p.specifications).length > 0 ? (
+                      {p.specifications &&
+                      Object.keys(p.specifications).length > 0 ? (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                          {Object.entries(p.specifications).map(([key, value]) => (
-                            <div
-                              key={key}
-                              className="flex justify-between items-center py-3 px-4 rounded-xl bg-white/[0.03] border border-white/[0.06]"
-                            >
-                              <span className="text-gray-400 text-sm font-medium font-body capitalize">{key.replace(/_/g, ' ')}</span>
-                              <span className="text-white text-sm font-semibold font-body">{String(value)}</span>
-                            </div>
-                          ))}
+                          {Object.entries(p.specifications).map(
+                            ([key, value]) => (
+                              <div
+                                key={key}
+                                className="flex justify-between items-center py-3 px-4 rounded-xl bg-white/[0.03] border border-white/[0.06]"
+                              >
+                                <span className="text-gray-400 text-sm font-medium font-body capitalize">
+                                  {key.replace(/_/g, " ")}
+                                </span>
+                                <span className="text-white text-sm font-semibold font-body">
+                                  {String(value)}
+                                </span>
+                              </div>
+                            ),
+                          )}
                         </div>
                       ) : (
-                        <p className="text-gray-500 text-center py-8 font-body">No specifications available.</p>
+                        <p className="text-gray-500 text-center py-8 font-body">
+                          No specifications available.
+                        </p>
                       )}
                     </div>
                   )}
 
                   {/* ── Ingredients ── */}
-                  {activeTab === 'ingredients' && (
+                  {activeTab === "ingredients" && (
                     <div>
-                      <p className="text-gray-400 font-body">Ingredient details are not available for this product.</p>
+                      <p className="text-gray-400 font-body">
+                        Ingredient details are not available for this product.
+                      </p>
                     </div>
                   )}
 
                   {/* ── Reviews ── */}
-                  {activeTab === 'reviews' && (
+                  {activeTab === "reviews" && (
                     <div>
                       {/* Rating summary */}
                       <div className="flex items-center gap-6 mb-8 p-5 rounded-xl bg-white/[0.03] border border-white/[0.06]">
                         <div className="text-center">
-                          <div className="text-4xl font-bold text-white font-heading">{p.rating ? p.rating.toFixed(1) : '0.0'}</div>
+                          <div className="text-4xl font-bold text-white font-heading">
+                            {p.rating ? p.rating.toFixed(1) : "0.0"}
+                          </div>
                           <Stars rating={p.rating || 0} size={14} />
-                          <p className="text-xs text-gray-500 mt-1 font-body">{p.review_count || 0} reviews</p>
+                          <p className="text-xs text-gray-500 mt-1 font-body">
+                            {p.review_count || 0} reviews
+                          </p>
                         </div>
                         <div className="flex-1 space-y-1.5">
-                          {[5, 4, 3, 2, 1].map(star => {
-                            const pct = p.review_count ? Math.round((sampleReviews.filter(r => r.rating === star).length / Math.max(p.review_count, sampleReviews.length)) * 100) : 0;
+                          {[5, 4, 3, 2, 1].map((star) => {
+                            const pct = p.review_count
+                              ? Math.round(
+                                  (sampleReviews.filter(
+                                    (r) => r.rating === star,
+                                  ).length /
+                                    Math.max(
+                                      p.review_count,
+                                      sampleReviews.length,
+                                    )) *
+                                    100,
+                                )
+                              : 0;
                             return (
-                              <div key={star} className="flex items-center gap-2 text-xs font-body">
-                                <span className="text-gray-400 w-8">{star} ★</span>
+                              <div
+                                key={star}
+                                className="flex items-center gap-2 text-xs font-body"
+                              >
+                                <span className="text-gray-400 w-8">
+                                  {star} ★
+                                </span>
                                 <div className="flex-1 h-1.5 bg-white/[0.06] rounded-full overflow-hidden">
-                                  <div className="h-full bg-yellow-400 rounded-full" style={{ width: `${pct || 0}%` }} />
+                                  <div
+                                    className="h-full bg-yellow-400 rounded-full"
+                                    style={{ width: `${pct || 0}%` }}
+                                  />
                                 </div>
-                                <span className="text-gray-600 w-6 text-right">{pct}%</span>
+                                <span className="text-gray-600 w-6 text-right">
+                                  {pct}%
+                                </span>
                               </div>
                             );
                           })}
@@ -779,7 +1070,9 @@ export default function ProductDetailPage() {
                           <div className="w-16 h-16 mx-auto mb-4 rounded-2xl bg-white/[0.04] border border-white/[0.08] flex items-center justify-center">
                             <Star size={28} className="text-gray-500" />
                           </div>
-                          <p className="text-gray-400 font-body">No reviews yet. Be the first to review!</p>
+                          <p className="text-gray-400 font-body">
+                            No reviews yet. Be the first to review!
+                          </p>
                         </div>
                       ) : (
                         <div className="space-y-4">
@@ -794,13 +1087,19 @@ export default function ProductDetailPage() {
                                     {review.user.charAt(0)}
                                   </div>
                                   <div>
-                                    <p className="font-medium text-white text-sm font-body">{review.user}</p>
+                                    <p className="font-medium text-white text-sm font-body">
+                                      {review.user}
+                                    </p>
                                     <Stars rating={review.rating} size={12} />
                                   </div>
                                 </div>
-                                <span className="text-xs text-gray-500 font-body">{review.date}</span>
+                                <span className="text-xs text-gray-500 font-body">
+                                  {review.date}
+                                </span>
                               </div>
-                              <p className="text-gray-300 text-sm leading-relaxed font-body">{review.comment}</p>
+                              <p className="text-gray-300 text-sm leading-relaxed font-body">
+                                {review.comment}
+                              </p>
                             </div>
                           ))}
                         </div>
@@ -818,42 +1117,67 @@ export default function ProductDetailPage() {
           <motion.section
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
+            viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.5, delay: 0.1 }}
             className="mt-14 lg:mt-20"
           >
-            <h2 className="text-2xl font-bold text-white mb-6 font-heading">Frequently Bought Together</h2>
+            <h2 className="text-2xl font-bold text-white mb-6 font-heading">
+              Frequently Bought Together
+            </h2>
             <div className="bg-white/[0.03] border border-white/[0.06] rounded-2xl backdrop-blur-sm p-6 md:p-8">
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
                 {/* This product (always selected) */}
                 <div className="flex items-center gap-3 bg-white/[0.05] border border-orange-500/20 rounded-xl p-3">
-                  <CheckCircle size={20} className="text-orange-500 flex-shrink-0" />
-                  <SafeProductImage src={primaryImageUrl(p)} alt="" className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
+                  <CheckCircle
+                    size={20}
+                    className="text-orange-500 flex-shrink-0"
+                  />
+                  <SafeProductImage
+                    src={primaryImageUrl(p)}
+                    alt=""
+                    className="w-14 h-14 rounded-lg object-cover flex-shrink-0"
+                  />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-white truncate font-body">{p.product_name}</p>
-                    <p className="text-xs text-orange-400 font-body">{formatCurrency(p.display_variant.effective_price)}</p>
+                    <p className="text-sm font-medium text-white truncate font-body">
+                      {p.product_name}
+                    </p>
+                    <p className="text-xs text-orange-400 font-body">
+                      {formatCurrency(p.display_variant.effective_price)}
+                    </p>
                   </div>
                 </div>
                 {fbtProducts.map((fp, i) => (
-                  <FBTItem key={fp.id} p={fp} checked={fbtChecked[i] ?? false} onToggle={() => {
-                    setFbtChecked(prev => {
-                      const next = [...prev];
-                      next[i] = !next[i];
-                      return next;
-                    });
-                  }} />
+                  <FBTItem
+                    key={fp.id}
+                    p={fp}
+                    checked={fbtChecked[i] ?? false}
+                    onToggle={() => {
+                      setFbtChecked((prev) => {
+                        const next = [...prev];
+                        next[i] = !next[i];
+                        return next;
+                      });
+                    }}
+                  />
                 ))}
               </div>
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-4 border-t border-white/[0.08]">
                 <div>
-                  <p className="text-sm text-gray-400 font-body">Total price:</p>
-                  <p className="text-2xl font-bold text-white font-heading">{formatCurrency(fbtTotal)}</p>
+                  <p className="text-sm text-gray-400 font-body">
+                    Total price:
+                  </p>
+                  <p className="text-2xl font-bold text-white font-heading">
+                    {formatCurrency(fbtTotal)}
+                  </p>
                 </div>
                 <button
                   onClick={() => {
                     /* bulk add all checked */
-                    fbtProducts.forEach((fp, i) => { if (fbtChecked[i]) addToCart(fp.id, 1); });
+                    fbtProducts.forEach((fp, i) => {
+                      if (fbtChecked[i])
+                        addToCart(fp.id, fp.display_variant.id, 1);
+                    });
                     handleAddToCart();
                   }}
                   className="px-8 py-3 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-lg shadow-orange-500/20 hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 active:scale-[0.98] font-body"
@@ -870,18 +1194,20 @@ export default function ProductDetailPage() {
           <motion.section
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: '-80px' }}
+            viewport={{ once: true, margin: "-80px" }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="mt-14 lg:mt-20 pb-12"
           >
-            <h2 className="text-2xl font-bold text-white mb-6 font-heading">Related Products</h2>
+            <h2 className="text-2xl font-bold text-white mb-6 font-heading">
+              Related Products
+            </h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map(rp => (
+              {relatedProducts.map((rp) => (
                 <motion.div
                   key={rp.id}
                   initial={{ opacity: 0, y: 20 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, margin: '-60px' }}
+                  viewport={{ once: true, margin: "-60px" }}
                   transition={{ duration: 0.35 }}
                 >
                   <Link

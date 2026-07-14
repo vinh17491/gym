@@ -10,6 +10,9 @@ export interface ProductVariantOption {
   option_name: string;
   value_id: number;
   value: string;
+  optionId?: number;
+  optionName?: string;
+  valueId?: number;
 }
 
 export interface ProductVariant {
@@ -24,6 +27,14 @@ export interface ProductVariant {
   weight?: number | null;
   is_active: boolean;
   available: number;
+  is_default: boolean;
+  stock_status: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  productId?: number;
+  variantName?: string;
+  salePrice?: number | null;
+  effectivePrice?: number;
+  stockStatus?: "IN_STOCK" | "LOW_STOCK" | "OUT_OF_STOCK";
+  isDefault?: boolean;
   options: ProductVariantOption[];
 }
 
@@ -66,8 +77,16 @@ export interface ProductListResponse {
   pagination: { page: number; limit: number; total: number; pages: number };
 }
 
+export interface ProductDetail extends Omit<
+  Product,
+  "display_variant" | "variants"
+> {
+  display_variant: ProductVariant | null;
+  variants: ProductVariant[];
+}
+
 export interface ProductDetailResponse {
   success: boolean;
-  data: Product;
+  data: ProductDetail;
   related_products?: Product[];
 }

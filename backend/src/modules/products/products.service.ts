@@ -26,11 +26,11 @@ CROSS APPLY (
   SELECT TOP (1)
     v.id, v.product_id, v.variant_name, v.sku, v.barcode, v.price, v.sale_price,
     CASE WHEN v.sale_price IS NOT NULL AND v.sale_price < v.price THEN v.sale_price ELSE v.price END AS effective_price,
-    v.weight, v.is_active, i.available
+    v.weight, v.is_active, v.is_default, i.available
   FROM dbo.ProductVariants v
   JOIN dbo.Inventory i ON i.variant_id = v.id
   WHERE v.product_id = p.id AND v.is_active = 1
-  ORDER BY CASE WHEN v.variant_name = N'Default' THEN 0 ELSE 1 END, v.id
+  ORDER BY v.is_default DESC, CASE WHEN i.available > 0 THEN 0 ELSE 1 END, v.id
 ) dv`;
 
 const joins = `
@@ -78,6 +78,11 @@ function mapProduct(row: any): any {
     weight: row.variant_weight ?? null,
     is_active: Boolean(row.variant_is_active),
     available: row.variant_available,
+    is_default: Boolean(row.variant_is_default),
+    stock_status: row.variant_available <= 0 ? 'OUT_OF_STOCK' : row.variant_available <= 5 ? 'LOW_STOCK' : 'IN_STOCK',
+    productId: row.id, variantName: row.variant_name, salePrice: row.variant_sale_price ?? null,
+    effectivePrice: row.effective_price, isDefault: Boolean(row.variant_is_default),
+    stockStatus: row.variant_available <= 0 ? 'OUT_OF_STOCK' : row.variant_available <= 5 ? 'LOW_STOCK' : 'IN_STOCK',
     options: []
   };
   const primaryImage = row.image_id == null ? null : {
@@ -137,7 +142,7 @@ SELECT p.id, p.product_name, p.slug, p.description, p.description AS short_descr
   b.name AS brand, b.slug AS brand_slug, c.name AS category, c.slug AS category_slug,
   dv.id AS variant_id, dv.variant_name, dv.sku AS variant_sku, dv.barcode AS variant_barcode,
   dv.price AS variant_price, dv.sale_price AS variant_sale_price,
-  dv.effective_price, dv.weight AS variant_weight, dv.is_active AS variant_is_active,
+  dv.effective_price, dv.weight AS variant_weight, dv.is_active AS variant_is_active, dv.is_default AS variant_is_default,
   dv.available AS variant_available,
   primary_image.id AS image_id, primary_image.image_url,
   primary_image.is_primary AS image_is_primary, primary_image.sort_order AS image_sort_order
@@ -213,7 +218,12 @@ export const productsService = {
     const baseResult = await pool.request().input('lookup', lookup).query(
       `${productSelect} WHERE ${predicate}${includeInactive ? '' : ' AND p.is_active = 1'}`
     );
-    if (!baseResult.recordset[0]) return null;
+    if (!baseResult.recordset[0]) {
+      const unavailable=await pool.request().input('lookupFallback',lookup).query(`SELECT p.id,p.product_name,p.slug,p.description,p.description AS short_description,p.specifications,p.is_active,p.is_featured,p.is_on_sale,p.created_at,b.name AS brand,b.slug AS brand_slug,c.name AS category,c.slug AS category_slug FROM dbo.Products p LEFT JOIN dbo.Brands b ON b.id=p.brand_id LEFT JOIN dbo.Categories c ON c.id=p.category_id WHERE ${predicate.replace('@lookup','@lookupFallback')}${includeInactive?'':' AND p.is_active=1'}`);
+      const row=unavailable.recordset[0];
+      if(!row)return null;
+      return {...row,is_active:Boolean(row.is_active),is_featured:Boolean(row.is_featured),is_on_sale:Boolean(row.is_on_sale),display_variant:null,variants:[],images:[],primary_image:null,main_image:null,additional_images:null};
+    }
 
     const product = mapProduct(baseResult.recordset[0]);
     const productId = product.id;
@@ -226,11 +236,11 @@ export const productsService = {
       pool.request().input('productId', productId).query(`
         SELECT v.id, v.product_id, v.variant_name, v.sku, v.barcode, v.price, v.sale_price,
           CASE WHEN v.sale_price IS NOT NULL AND v.sale_price < v.price THEN v.sale_price ELSE v.price END AS effective_price,
-          v.weight, v.is_active, i.available
+          v.weight, v.is_active, v.is_default, i.available
         FROM dbo.ProductVariants v
         JOIN dbo.Inventory i ON i.variant_id = v.id
         WHERE v.product_id = @productId AND v.is_active = 1
-        ORDER BY CASE WHEN v.variant_name = N'Default' THEN 0 ELSE 1 END, v.id`),
+        ORDER BY v.is_default DESC, CASE WHEN i.available > 0 THEN 0 ELSE 1 END, v.id`),
       pool.request().input('productId', productId).query(`
         SELECT vov.variant_id, po.id AS option_id, po.name AS option_name,
           pov.id AS value_id, pov.value
@@ -251,7 +261,10 @@ export const productsService = {
         option_id: option.option_id,
         option_name: option.option_name,
         value_id: option.value_id,
-        value: option.value
+        value: option.value,
+        optionId:option.option_id,
+        optionName:option.option_name,
+        valueId:option.value_id
       });
       optionsByVariant.set(option.variant_id, options);
     }
@@ -261,6 +274,9 @@ export const productsService = {
       sale_price: variant.sale_price ?? null,
       barcode: variant.barcode ?? null,
       weight: variant.weight ?? null,
+      is_default: Boolean(variant.is_default),
+      stock_status: variant.available <= 0 ? 'OUT_OF_STOCK' : variant.available <= 5 ? 'LOW_STOCK' : 'IN_STOCK',
+      productId:variant.product_id,variantName:variant.variant_name,salePrice:variant.sale_price??null,effectivePrice:variant.effective_price,isDefault:Boolean(variant.is_default),stockStatus:variant.available<=0?'OUT_OF_STOCK':variant.available<=5?'LOW_STOCK':'IN_STOCK',
       options: optionsByVariant.get(variant.id) || []
     }));
     const images = imagesResult.recordset.map((image: any) => ({

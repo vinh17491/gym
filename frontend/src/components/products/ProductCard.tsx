@@ -142,7 +142,7 @@ export default function ProductCard({ product }: ProductCardProps) {
         {/* Action Buttons - ẩn/hiện khi hover */}
         <div className="flex gap-2 pt-1 opacity-0 translate-y-2 group-hover:opacity-100 group-hover:translate-y-0 transition-all duration-300 ease-out">
           <button
-            onClick={() => addToCart(product.id)}
+            onClick={() => addToCart(product.id,product.display_variant.id,1)}
             disabled={outOfStock}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold
               bg-gradient-to-r from-orange-500 to-orange-600 text-white

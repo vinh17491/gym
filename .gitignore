@@ -6,6 +6,10 @@ uploads/
 backend/uploads/products/*
 !backend/uploads/products/.gitkeep
 backups/
+backend/logs/
+**/*TASK007_ACCEPTANCE*/
+**/browser-profiles/
+**/runtime-test-artifacts/
 coverage/
 .DS_Store
 Thumbs.db

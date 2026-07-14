@@ -47,7 +47,7 @@ export default function MediaPlayer({
   const [duration, setDuration] = useState('0:00');
   const [error, setError] = useState(false);
   const [showControls, setShowControls] = useState(true);
-  const controlsTimeout = useRef<NodeJS.Timeout | null>(null);
+  const controlsTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const video = videoRef.current;

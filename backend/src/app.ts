@@ -35,9 +35,11 @@ import adminVariantRoutes from './modules/admin-variants/admin-variants.routes';
 import adminInventoryRoutes from './modules/admin-inventory/admin-inventory.routes';
 import adminOrderRoutes from './modules/admin-orders/admin-orders.routes';
 import orderRoutes from './modules/orders/orders.routes';
+import { startOrderExpirationRunner } from './modules/orders/order-expiration.runner';
 import path from 'path';
 
 const app = express();
+startOrderExpirationRunner();
 
 // Security middleware stack
 app.use(securityHeaders);

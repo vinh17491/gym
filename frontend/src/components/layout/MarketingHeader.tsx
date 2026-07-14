@@ -1,14 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, Dumbbell, Search, ChevronRight } from 'lucide-react';
+import { Menu, X, Dumbbell, Search, ChevronRight,ShoppingCart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
+import { useProductsStore } from '../../stores/productsStore';
 
 export default function MarketingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
   const { isAuthenticated } = useAuthStore();
+  const {getCartItemCount,migratePersistedCart}=useProductsStore();
+  const cartCount=Math.max(0,getCartItemCount());
+  useEffect(()=>{void migratePersistedCart();},[migratePersistedCart]);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -66,6 +70,7 @@ export default function MarketingHeader() {
 
           {/* Desktop CTA */}
           <div className="hidden lg:flex items-center gap-3">
+            <Link to="/cart" aria-label={`Giỏ hàng, ${cartCount} sản phẩm`} className="premium-nav-link relative"><ShoppingCart size={20}/>{cartCount>0&&<span className="absolute -right-2 -top-2 rounded-full bg-orange-500 px-1.5 text-xs text-white">{cartCount}</span>}</Link>
             <Link to="/contact" className="premium-nav-link">
               <Search size={18} />
             </Link>
@@ -121,6 +126,8 @@ export default function MarketingHeader() {
                 </Link>
               ))}
               <div className="pt-4 border-t border-[#1e293b] space-y-2">
+                <Link to="/cart" onClick={()=>setMobileOpen(false)} className="block px-4 py-3 text-[#94A3B8]">Cart ({cartCount})</Link>
+                {isAuthenticated&&<Link to="/orders" onClick={()=>setMobileOpen(false)} className="block px-4 py-3 text-[#94A3B8]">Đơn hàng của tôi</Link>}
                 {isAuthenticated ? (
                   <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block hero-btn-primary text-center">
                     Go to Dashboard

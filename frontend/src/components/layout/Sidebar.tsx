@@ -12,6 +12,7 @@ const navLinks = [
   { to: '/tickets', icon: Ticket, label: 'Tickets' },
   { to: '/invoices', icon: FileText, label: 'Invoices' },
   { to: '/crm', icon: Building2, label: 'CRM' },
+  { to: '/orders', icon: ShoppingBag, label: 'Đơn hàng của tôi' },
 ]
 
 const adminLinks = [

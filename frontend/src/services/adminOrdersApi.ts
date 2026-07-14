@@ -1,10 +1,48 @@
-import api from '../api/axios';
-import type { AdminOrderDetail,AdminOrderFilters,AdminOrderListResponse,AdminPaymentStatusInput,AdminPaymentStatusResult,PaymentNotificationInput,PaymentNotificationResult,UpdateOrderStatusInput } from '../types/adminOrders';
-export interface AdminApiResponse<T>{ success:boolean; data:T; message?:string }
-export const adminOrdersApi={
-  listAdminOrders:(filters:AdminOrderFilters)=>api.get<AdminApiResponse<AdminOrderListResponse>>('/admin/orders',{params:{...filters,orderStatus:filters.orderStatus||undefined,paymentStatus:filters.paymentStatus||undefined,userId:filters.userId?Number(filters.userId):undefined,dateFrom:filters.dateFrom||undefined,dateTo:filters.dateTo||undefined}}),
-  getAdminOrder:(orderId:number)=>api.get<AdminApiResponse<AdminOrderDetail>>(`/admin/orders/${orderId}`),
-  updateAdminOrderStatus:(orderId:number,payload:UpdateOrderStatusInput)=>api.patch<AdminApiResponse<AdminOrderDetail>>(`/admin/orders/${orderId}/status`,payload),
-  updateAdminOrderPaymentStatus:(orderId:number,payload:AdminPaymentStatusInput)=>api.patch<AdminApiResponse<AdminPaymentStatusResult>>(`/admin/orders/${orderId}/payment-status`,payload),
-  notifyOrderPayment:(orderId:number,payload:PaymentNotificationInput)=>api.post<AdminApiResponse<PaymentNotificationResult>>(`/orders/${orderId}/payment-notification`,payload),
+import api from "../api/axios";
+import type {
+  AdminOrderDetail,
+  AdminOrderFilters,
+  AdminOrderListResponse,
+  AdminPaymentConfigurationStatus,
+  AdminPaymentStatusInput,
+  AdminPaymentStatusResult,
+  UpdateOrderStatusInput,
+} from "../types/adminOrders";
+export interface AdminApiResponse<T> {
+  success: boolean;
+  data: T;
+  message?: string;
+}
+export const adminOrdersApi = {
+  listAdminOrders: (filters: AdminOrderFilters) =>
+    api.get<AdminApiResponse<AdminOrderListResponse>>("/admin/orders", {
+      params: {
+        ...filters,
+        search: filters.search.trim() || undefined,
+        orderStatus: filters.orderStatus || undefined,
+        paymentStatus: filters.paymentStatus || undefined,
+        userId: filters.userId ? Number(filters.userId) : undefined,
+        dateFrom: filters.dateFrom || undefined,
+        dateTo: filters.dateTo || undefined,
+      },
+    }),
+  getAdminOrder: (orderId: number) =>
+    api.get<AdminApiResponse<AdminOrderDetail>>(`/admin/orders/${orderId}`),
+  updateAdminOrderStatus: (orderId: number, payload: UpdateOrderStatusInput) =>
+    api.patch<AdminApiResponse<AdminOrderDetail>>(
+      `/admin/orders/${orderId}/status`,
+      payload,
+    ),
+  updateAdminOrderPaymentStatus: (
+    orderId: number,
+    payload: AdminPaymentStatusInput,
+  ) =>
+    api.patch<AdminApiResponse<AdminPaymentStatusResult>>(
+      `/admin/orders/${orderId}/payment-status`,
+      payload,
+    ),
+  getPaymentConfiguration: () =>
+    api.get<AdminApiResponse<AdminPaymentConfigurationStatus>>(
+      "/admin/payment-configuration",
+    ),
 };

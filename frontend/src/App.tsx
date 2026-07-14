@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate,useLocation } from 'react-router-dom';
 import { useAuthStore } from './stores/authStore';
 import Layout from './components/layout/Layout';
 import CommandMenu from './components/layout/CommandMenu';
@@ -45,10 +45,13 @@ import AdminOrdersPage from './pages/admin/AdminOrdersPage';
 import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
 import CustomerOrderDetailPage from './pages/orders/CustomerOrderDetailPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
+import CartPage from './pages/cart/CartPage';
+import CustomerOrdersPage from './pages/orders/CustomerOrdersPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
-  if (!isAuthenticated) return <Navigate to="/" replace />;
+  const location=useLocation();
+  if (!isAuthenticated) return <Navigate to="/login" replace state={{from:location}} />;
   return <>{children}</>;
 }
 
@@ -79,6 +82,7 @@ export default function App() {
         <Route path="/workout-programs" element={<MarketingHeaderWrapper><WorkoutPrograms /></MarketingHeaderWrapper>} />
         <Route path="/products" element={<MarketingHeaderWrapper><ProductsListPage /></MarketingHeaderWrapper>} />
         <Route path="/products/:id" element={<MarketingHeaderWrapper><ProductDetailPage /></MarketingHeaderWrapper>} />
+        <Route path="/cart" element={<MarketingHeaderWrapper><CartPage /></MarketingHeaderWrapper>} />
 
         {/* AUTH */}
         <Route path="/login" element={<LoginPage />} />
@@ -98,6 +102,7 @@ export default function App() {
           <Route path="/booking" element={<CoachBooking />} />
           <Route path="/profile" element={<UserProfile />} />
             <Route path="/orders/:orderId" element={<CustomerOrderDetailPage />} />
+            <Route path="/orders" element={<CustomerOrdersPage />} />
             <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/video" element={<VideoLibrary />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
