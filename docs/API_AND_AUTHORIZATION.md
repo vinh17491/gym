@@ -66,3 +66,11 @@ Mounted APIs include public/authenticated Plans, Coaches, Bookings, Videos, Exer
 ## Planned, not implemented
 
 TASK-008 plans Admin/Coach Exercise and Program CRUD/builder APIs; Admin/Coach assignment APIs; Member self assignment/schedule/session/set-log APIs; and Member/Coach/Admin progress APIs. Exact paths must be finalized after Discovery and must not be advertised as current routes.
+
+## Authorization and response principles
+
+JWT bearer authentication supplies the authenticated identity and role (`ADMIN`, `COACH`, `MEMBER`). Backend middleware and owner-filtered service queries are authoritative; frontend guards are navigation UX only. Customer Order endpoints derive ownership from JWT and reject cross-member access. Admin override exists only in Admin routes. New TASK-008 Coach access must require an active Coach-Member scope.
+
+Validation failures use 400-class responses, missing/invalid authentication uses 401, insufficient role/scope uses 403, missing resources use 404, business transition/concurrency conflicts use 409, and incomplete required external configuration may use 503. Central error handling owns unexpected failures. SQL inputs must remain parameterized; pagination, filtering and sorting require validation/allowlists.
+
+Order and Payment histories are immutable normal-flow audit data. Email is attempted after committed commerce state and cannot roll back the transaction. Planned TASK-008 workout/progress APIs are **PLANNED, NOT IMPLEMENTED** and must enforce Member ownership, Coach scope, privacy and concurrency rules from the specification.

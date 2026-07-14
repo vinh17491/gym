@@ -1,4 +1,4 @@
-TASK-008 START CHECKPOINT
+# TASK-008 Start Checkpoint
 
 TASK-007 baseline: FULL_TASK_007_COMPLETE
 Base branch: 007c-order-management
@@ -11,8 +11,10 @@ snapshots/Set Logs; progress and final acceptance.
 Out of scope: AI, camera, pose estimation, automatic rep counting, medical,
 nutrition, wearables, live coaching, social expansion and new payment work.
 
-Read first: docs/TASK-008_DISCOVERY_CHECKLIST.md, then
-docs/TASK-008_FULL_IMPLEMENTATION_SPEC.txt, docs/ARCHITECTURE.md,
-docs/DATABASE_AND_MIGRATIONS.md and docs/SECURITY_AND_AUTHORIZATION.md.
+TASK-008 implementation: NOT STARTED.
+
+Read first: `docs/TASK-008_DISCOVERY_CHECKLIST.md`, then
+`docs/TASK-008_IMPLEMENTATION_SPEC.md`, `docs/ARCHITECTURE.md`,
+`docs/DATABASE_AND_MIGRATIONS.md` and `docs/API_AND_AUTHORIZATION.md`.
 Exact next steps: audit source/database; classify REUSE/EXTEND/REPLACE/DEPRECATED;
 resolve Coach-Member and media decisions; record evidence; only then design 0006.

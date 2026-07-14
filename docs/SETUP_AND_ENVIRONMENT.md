@@ -1,4 +1,6 @@
-# Environment Setup
+# Setup and Environment
+
+Prerequisites: Node.js/npm, SQL Server access, and Git. Clone the repository, run `npm install` separately in `backend/` and `frontend/`, configure a local ignored `backend/.env`, and check the selected database with `npm run db:migrate:status` from `backend/`.
 
 Keep `backend/.env` local and ignored. `.env.example` must contain placeholders only. Never copy real values into docs, commits, issues, or logs.
 
@@ -18,3 +20,7 @@ Keep `backend/.env` local and ignored. `.env.example` must contain placeholders 
 `MAIL_*` is deliberately separate from legacy `SMTP_*`. For Gmail, use an App Password, not the normal Gmail login password. Common transport combinations are port 465 with secure enabled or port 587 with secure disabled; use provider requirements. `MAIL_SECURE` must be exactly `true` or `false` and ports must be valid.
 
 `BANK_QR_IMAGE_URL` must be a public root-relative path (for example a deployed `/image/...` asset) or HTTPS URL. Windows paths, protocol-relative URLs and `file:`, `javascript:` or `data:` schemes are invalid.
+
+Start locally with `npm run dev` in both `backend/` and `frontend/`. Production scripts verified from package files are backend `npm run build` then `npm start`, and frontend `npm run build` then `npm run preview`.
+
+Troubleshooting: verify `/api/health`, `CORS_ORIGIN`, JWT expiry, SQL Server host/database identity, upload directory permissions and the distinction between `MAIL_*` readiness and legacy `SMTP_*`. Never print the environment file while diagnosing.

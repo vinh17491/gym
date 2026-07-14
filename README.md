@@ -30,7 +30,7 @@ image/           Repository-managed static image assets
 
 ## Quick start
 
-Prerequisites: Node.js, npm, and access to SQL Server. Configure local environment variables using [Environment Setup](docs/ENVIRONMENT_SETUP.md); never commit `.env` or secrets.
+Prerequisites: Node.js, npm, and access to SQL Server. Configure local environment variables using [Setup and Environment](docs/SETUP_AND_ENVIRONMENT.md); never commit `.env` or secrets.
 
 ```bash
 cd backend
@@ -47,7 +47,7 @@ npm install
 npm run dev
 ```
 
-Use [`db/migrations/README.md`](db/migrations/README.md) and [Database and Migrations](docs/DATABASE_AND_MIGRATIONS.md) before applying migrations. See the [documentation index](docs/README.md), [developer guide](docs/DEVELOPER_GUIDE.md), and [TASK-008 specification](docs/TASK-008_FULL_IMPLEMENTATION_SPEC.txt).
+Use [Database and Migrations](docs/DATABASE_AND_MIGRATIONS.md) before applying migrations. See the [documentation index](docs/README.md), [developer workflow](docs/DEVELOPER_WORKFLOW.md), and [TASK-008 specification](docs/TASK-008_IMPLEMENTATION_SPEC.md).
 
 ## Contribution workflow
 

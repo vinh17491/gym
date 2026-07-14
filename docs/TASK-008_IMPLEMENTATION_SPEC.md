@@ -1,5 +1,6 @@
-GYMFIT — TASK-008 FULL IMPLEMENTATION SPECIFICATION
-WORKOUT PROGRAM, MEMBER SESSIONS AND PROGRESS
+# GymFit — TASK-008 Implementation Specification
+
+## Workout Program, Member Sessions and Progress
 
 Baseline
 Workspace: D:\Web-GYM-main (use repository-relative paths in committed docs)
