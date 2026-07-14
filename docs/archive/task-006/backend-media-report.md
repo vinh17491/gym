@@ -26,3 +26,6 @@
 - www.ghostlifestyle.com: 1
 
 *Generated: 2026-06-27 14:23:50*
+# HISTORICAL REFERENCE — NOT CURRENT SOURCE OF TRUTH
+
+Retained as TASK-006-era evidence. Use the [canonical documentation index](../../README.md), [Architecture](../../ARCHITECTURE.md), and [Known Limitations](../../KNOWN_LIMITATIONS.md) for current guidance.

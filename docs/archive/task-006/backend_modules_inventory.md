@@ -551,3 +551,6 @@ src/modules/
 ├── users/          ❌ (empty directory)
 └── videos/         ✅ videos.controller.ts, videos.routes.ts
 ```
+# HISTORICAL REFERENCE — NOT CURRENT SOURCE OF TRUTH
+
+Retained as a point-in-time module inventory. Use the [Developer Guide](../../DEVELOPER_GUIDE.md) and actual source for current modules.

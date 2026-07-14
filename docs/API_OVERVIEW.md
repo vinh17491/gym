@@ -1,0 +1,68 @@
+# API Overview
+
+Catalog generated from `backend/src/app.ts` and current route files on 2026-07-15. `Auth` means JWT bearer authentication; role checks shown are backend checks.
+
+## Auth
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| POST | `/api/auth/register` | Public | Register |
+| POST | `/api/auth/login` | Public | Authenticate |
+| POST | `/api/auth/refresh` | Public/token | Refresh access token |
+| POST | `/api/auth/logout` | Auth | Logout |
+| GET/PUT | `/api/auth/me` | Auth | Read/update profile |
+| POST | `/api/auth/password` | Auth | Change password |
+| POST/DELETE | `/api/auth/avatar` | Auth | Upload/remove avatar |
+
+## Public Product
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| GET | `/api/products` | Public | Paginated/filterable products |
+| GET | `/api/products/featured` | Public | Featured products |
+| GET | `/api/products/new` | Public | New products |
+| GET | `/api/products/sale` | Public | Sale products |
+| GET | `/api/products/filters` | Public | Catalog filter values |
+| GET | `/api/products/:slug` | Public | Product/variant detail; numeric ID fallback |
+
+## Customer Order
+
+| Method | Path | Access | Purpose |
+|---|---|---|---|
+| POST | `/api/orders` | Auth/owner | Create variant-aware order/reservation |
+| GET | `/api/orders` | Auth/owner | List own orders |
+| GET | `/api/orders/:orderId` | Auth/owner | Own order detail |
+| POST | `/api/orders/:orderId/payment-notification` | Auth/owner | Record customer bank-payment notification |
+| PATCH | `/api/orders/:orderId/cancel` | Auth/owner | Cancel eligible own order |
+
+## Admin commerce
+
+All routes below are protected by `authenticate` plus `ADMIN` authorization at router level.
+
+| Method | Path | Purpose |
+|---|---|---|
+| GET/POST | `/api/admin/products` | List/create products |
+| GET/PATCH/DELETE | `/api/admin/products/:id` | Product detail/update/delete |
+| POST | `/api/admin/products/:id/images` | Upload images |
+| PATCH/DELETE | `/api/admin/products/:id/images/:imageId[/primary]` | Set primary/remove image |
+| GET/POST | `/api/admin/categories`, `/api/admin/brands` | List/create catalog entities |
+| GET/PATCH/DELETE | `/api/admin/categories/:id`, `/api/admin/brands/:id` | Entity detail/update/delete |
+| GET/POST | `/api/admin/products/:productId/variants` | List/create variants |
+| GET/PATCH/DELETE | `/api/admin/variants/:variantId` | Variant detail/update/delete |
+| POST | `/api/admin/variants/:variantId/set-default` | Select default variant |
+| GET | `/api/admin/inventory`, `/api/admin/inventory/low-stock` | Inventory lists |
+| GET | `/api/admin/variants/:variantId/inventory` | Inventory detail |
+| POST/GET | `/api/admin/variants/:variantId/inventory/adjustments` | Adjust/list history |
+| PATCH | `/api/admin/variants/:variantId/inventory/threshold` | Low-stock threshold |
+| GET | `/api/admin/payment-configuration` | Bank/mail readiness |
+| GET | `/api/admin/orders`, `/api/admin/orders/:orderId` | Order list/detail and histories |
+| PATCH | `/api/admin/orders/:orderId/status` | Order transition |
+| PATCH | `/api/admin/orders/:orderId/payment-status` | Payment transition/refund record |
+
+## Relevant legacy modules
+
+Mounted APIs include public/authenticated Plans, Coaches, Bookings, Videos, Exercises; and authenticated Referral, Coupons, Loyalty, CRM, Tickets, Invoices, Audit, Analytics, Revenue, Backup and Media. Their route files are authoritative. Existing Exercises provides public list/taxonomy/detail plus Admin/Coach update; it is a Discovery Gate input, not proof TASK-008 is implemented. Membership payment under Plans is separate from Product Order payment.
+
+## Planned, not implemented
+
+TASK-008 plans Admin/Coach Exercise and Program CRUD/builder APIs; Admin/Coach assignment APIs; Member self assignment/schedule/session/set-log APIs; and Member/Coach/Admin progress APIs. Exact paths must be finalized after Discovery and must not be advertised as current routes.

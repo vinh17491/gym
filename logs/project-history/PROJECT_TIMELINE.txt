@@ -1,0 +1,13 @@
+GYMFIT PROJECT TIMELINE
+
+TASK-001 through TASK-006: COMPLETE — core gym platform, roles and operational foundations.
+TASK-007A: COMPLETE — Product/Image, Variant and Inventory foundation.
+TASK-007B: COMPLETE — Admin catalog, variant, inventory and order management.
+TASK-007C: COMPLETE — Cart/Checkout, Orders, reservations, payment histories,
+Bank/QR, Gmail and fulfillment/refund lifecycle.
+TASK-007 final checkpoint: branch 007c-order-management, commit
+427ad52996961648ffc622ca1bf2999a5aab3df4; FULL_TASK_007_COMPLETE.
+2026-07-15: TASK-008 reactivated as WORKOUT PROGRAM AND MEMBER PROGRESS,
+excluding AI/camera/pose estimation. Specification and documentation consolidation
+completed on branch 008-workout-programs-progress.
+Current next action: TASK-008 Discovery Gate before migration 0006.

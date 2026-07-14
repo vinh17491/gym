@@ -323,3 +323,6 @@ GO
 - No SQL injection vulnerabilities
 - Proper JSON formatting for specs/features
 - Comprehensive product catalog for GymFit Store
+# HISTORICAL REFERENCE — NOT CURRENT SOURCE OF TRUTH
+
+Retained as point-in-time catalog evidence. Use current source/database and the [TASK-007 handoff](../../TASK-007_FINAL_HANDOFF.md).

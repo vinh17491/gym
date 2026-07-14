@@ -1,0 +1,50 @@
+GYMFIT DOCUMENTATION UPDATE LOG — 2026-07-15
+
+Purpose: source-grounded documentation consolidation and TASK-008 specification.
+
+DOCUMENT INVENTORY / CLASSIFICATION
+- README.md, PROJECT_STATUS.txt, ROADMAP.md, CONTRIBUTING.md: CANONICAL_CURRENT.
+- docs/README.md and current topic guides: CANONICAL_CURRENT.
+- docs/TASK-007_FINAL_HANDOFF.md: CANONICAL_CURRENT handoff.
+- docs/TASK-008_FULL_IMPLEMENTATION_SPEC.txt and discovery checklist: CANONICAL_CURRENT.
+- GYMFIT_TASK-007_FINAL_*_STATUS.txt: HISTORICAL_REFERENCE / final evidence.
+- docs/backend-media-report.md, backend_modules_inventory.md, categories-list.md,
+  db-media-report.md: HISTORICAL_REFERENCE moved to docs/archive/task-006.
+- docs/product-migration-report.md: HISTORICAL_REFERENCE moved to archive/task-007.
+- GYMFIT_TASK-007_ONE-SHOT_FINAL_CLOSURE_PROMPT.txt: untracked, intentionally local,
+  not staged.
+- GYMFIT_TASK-008_AND_DOCUMENTATION_REFRESH_ONE-SHOT_PROMPT_2026-07-15.txt:
+  untracked execution input, intentionally not staged.
+- root logs/*.log, backend/logs/**: RUNTIME_ARTIFACT, ignored and not staged.
+
+AUDITED
+Final TASK-007 source/acceptance status; app route mounting; backend modules/routes/
+services/validation/auth/config; frontend App/pages/services/types/stores; package
+scripts/dependencies; migrations 0001-0005 and runner guide; existing docs; Git and
+ignore state. No database mutation or application build was performed.
+
+CREATED/REWRITTEN
+Root onboarding/status/roadmap/contribution docs; canonical docs index/current
+status/architecture/developer/database/API/environment/security/Git/limitations;
+TASK-007 handoff; TASK-008 full spec/checklist; archive index; logs policy and
+three curated history files.
+
+STALE CLAIMS CORRECTED
+Removed D:\gymer path, outdated table/module/route claims, no-service-layer claim,
+product-only cart/missing checkout/orders claims, TASK-007 partial status, Gmail/
+Bank/Admin-browser pending claims, and current TASK-008 cancellation. Historical
+reports received explicit non-canonical headers and replacement links.
+
+VALIDATION
+Relative Markdown links: PASS; every local Markdown target resolves.
+Referenced routes/migrations/scripts: audited against source.
+UTF-8/diff whitespace: PASS; git diff --check passed (Git reported only local
+LF-to-CRLF checkout notices, not diff errors).
+Secret/privacy scan of changed documentation: PASS; no credential patterns found,
+and no .env values were read or copied.
+Raw runtime log tracking check: PASS; no tracked .log or backend/logs artifacts.
+Application source/migration scope check: PASS; no backend/src, frontend/src or
+numbered migration change.
+Remaining documentation issues: none known.
+Final documentation verdict: DOCUMENTATION_AND_TASK008_SPEC_COMPLETE, subject to
+the explicit commit and remote push recorded by Git.

@@ -1,127 +1,31 @@
-﻿# 🏋️ Gymer — Enterprise Gym Management System
+# GymFit Documentation
 
-Full-stack gym management platform. **React + Vite** frontend, **Node.js/Express (TypeScript)** backend, **SQL Server** database.
+This directory is the canonical documentation index as of 2026-07-15. Current source and applied migrations override historical reports when they conflict. Raw files under `backend/logs/` or `logs/*.log` are runtime artifacts, not authoritative documentation.
 
-## Core Features
+## Start here
 
-| Feature | Status | Backend | Frontend |
-|---------|--------|---------|----------|
-| Dashboard | ✅ | ✅ API | ✅ Stats + Charts |
-| Video Library | ✅ | ✅ API | ✅ Wired |
-| Coach Booking | ✅ | ✅ API | ✅ Wired |
-| Membership Plans | ✅ | ✅ API | ✅ Wired |
-| User Profile | ✅ | ✅ API | ✅ Wired |
-| CRM | ✅ | ✅ API | ✅ Full page |
-| Referral Program | ✅ | ✅ API | ✅ Full page |
-| Coupons | ✅ | ✅ API | ✅ Full page |
-| Loyalty Points | ✅ | ✅ API | ✅ Full page |
-| Support Tickets | ✅ | ✅ API | ✅ Full page |
-| Invoices | ✅ | ✅ API | ✅ Full page |
-| Analytics | ✅ | ✅ API | ✅ Charts |
-| Audit Logging | ✅ | ✅ API | ✅ Full page |
-| Backup Management | ✅ | ✅ API | ✅ Full page |
-| Revenue Dashboard | ✅ | ✅ API | ✅ Full page |
-| PWA | ✅ | — | ✅ Service worker |
+1. [Root README](../README.md)
+2. [Current Project Status](CURRENT_PROJECT_STATUS.md)
+3. [Developer Guide](DEVELOPER_GUIDE.md)
+4. [Architecture](ARCHITECTURE.md)
+5. [Database and Migrations](DATABASE_AND_MIGRATIONS.md)
+6. [Environment Setup](ENVIRONMENT_SETUP.md)
+7. [Security and Authorization](SECURITY_AND_AUTHORIZATION.md)
+8. [TASK-007 Final Handoff](TASK-007_FINAL_HANDOFF.md)
+9. [TASK-008 Full Implementation Specification](TASK-008_FULL_IMPLEMENTATION_SPEC.txt)
+10. [TASK-008 Discovery Checklist](TASK-008_DISCOVERY_CHECKLIST.md)
 
-## Security
+## Canonical current documents
 
-| Layer | Implementation |
-|-------|---------------|
-| Password Hashing | bcrypt 12 rounds |
-| Authentication | JWT (access + refresh tokens) |
-| Authorization | RBAC (admin/coach/member) |
-| Rate Limiting | express-rate-limit (100 req/15min, auth: 10/15min) |
-| CORS | Origin validation + credentials |
-| HTTP Headers | Helmet (CSP, HSTS, X-Frame-Options) |
-| Input Validation | Zod schemas + express-validator |
-| Input Sanitization | XSS + SQLi pattern detection |
-| CSRF Protection | Token-based (x-csrf-token header) |
-| Session Security | secure + httpOnly + sameSite cookies |
-| Audit Logging | Winston + DailyRotateFile (30d retention) |
-| Error Handling | Custom AppError + structured responses |
+- [API Overview](API_OVERVIEW.md)
+- [Git and Branch Workflow](GIT_AND_BRANCH_WORKFLOW.md)
+- [Known Limitations](KNOWN_LIMITATIONS.md)
+- [Roadmap](../ROADMAP.md)
+- [Contributing Guide](../CONTRIBUTING.md)
+- [Plain-text Project Status](../PROJECT_STATUS.txt)
+- [Migration Runner Guide](../db/migrations/README.md)
+- [Curated logs policy/history](../logs/README.md)
 
-## Tech Stack
+## Historical evidence
 
-**Frontend:** React 18 + TypeScript, Vite, TailwindCSS (dark), React Router v6 (lazy routes), Zustand, Axios, Recharts, Lucide, Framer Motion, PWA
-
-**Backend:** Node.js + Express + TypeScript, SQL Server (mssql), JWT, Zod validation, Winston logging, bcryptjs, Helmet, express-rate-limit, express-session, Redis (rate limiting)
-
-**Database:** SQL Server 2022, 34 tables
-
-**Testing:** Vitest + @testing-library/react (frontend), 13 unit tests
-
-## Quick Start
-
-```bash
-# Backend
-cd backend
-npm install
-cp .env.example .env  # configure DB, JWT secrets, CORS_ORIGIN
-npm run build
-npm start
-
-# Frontend
-cd frontend
-npm install
-npm run build
-npm run preview   # or npm run dev for dev server
-```
-
-## Folder Structure
-
-```
-D:\gymer\
-├── backend/
-│   ├── src/
-│   │   ├── config/          # config.ts, redis.ts
-│   │   ├── middleware/       # auth, csrf, sanitize, session, rateLimiter, auditLogger, securityHeaders, errorHandler
-│   │   ├── modules/         # auth, bookings, coaches, plans, videos, referral, coupon, loyalty, audit, analytics, crm, tickets, invoices, backup, revenue
-│   │   ├── utils/           # logger, response helpers
-│   │   ├── types/           # TypeScript interfaces
-│   │   ├── app.ts           # Express app (security middleware stack)
-│   │   └── index.ts         # Server entry
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/      # shared (StatCard, DataTable, page-header) + ui (button, input, badge, card, etc.)
-│   │   ├── pages/           # 30+ page components
-│   │   ├── services/        # plans.ts, videos.ts, coaches.ts (API service layer)
-│   │   ├── stores/          # Zustand authStore
-│   │   ├── api/             # axios instance + interceptors
-│   │   ├── lib/             # utils (cn, formatDate, etc.)
-│   │   └── __tests__/       # Vitest unit tests (13 tests)
-│   ├── vitest.config.ts
-│   └── package.json
-├── database/                # SQL schema + seed data
-├── docs/                    # Generated documentation
-├── README.md
-├── DEVELOPER_GUIDE.md
-└── ROADMAP.md
-```
-
-## API Endpoints (Key)
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| POST | /api/auth/register | No | Register new user |
-| POST | /api/auth/login | No | Login, get JWT tokens |
-| POST | /api/auth/refresh | No | Refresh access token |
-| GET | /api/auth/me | Yes | Get current user profile |
-| PUT | /api/auth/me | Yes | Update profile |
-| PUT | /api/auth/password | Yes | Change password |
-| GET | /api/plans | No | List membership plans |
-| GET | /api/videos | No | List videos |
-| GET | /api/videos/categories | No | List video categories |
-| GET | /api/bookings/coaches | No | List coaches |
-| GET | /api/bookings/coaches/:id/availability | No | Coach availability |
-| GET | /api/crm | Yes | CRM data |
-| GET | /api/referral/my-code | Yes | My referral code |
-| GET | /api/coupons | Yes | List coupons |
-| GET | /api/loyalty/points | Yes | My loyalty points |
-| GET | /api/tickets | Yes | List support tickets |
-| GET | /api/invoices | Yes | List invoices |
-| GET | /api/audit | Admin | Audit logs |
-| GET | /api/analytics/overview | Admin | Analytics overview |
-| GET | /api/revenue/dashboard | Admin | Revenue dashboard |
-| GET | /api/backup | Admin | Backup management |
-| GET | /api/csrf-token | Yes | Get CSRF token |
+See [archive/README.md](archive/README.md). Archived reports are retained for audit context but are explicitly not current instructions. The two root TASK-007 final status files remain acceptance/source evidence; [TASK-007 Final Handoff](TASK-007_FINAL_HANDOFF.md) is the readable canonical summary.

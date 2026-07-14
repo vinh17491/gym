@@ -75,3 +75,6 @@ Optimum Nutrition, MyProtein, Dymatize, BSN, MuscleTech, Rogue Fitness, Bowflex,
 3. Populate ProductSpecifications with detailed spec data
 4. Add inventory tracking via Inventory table
 5. Implement compare & wishlist full functionality
+# HISTORICAL REFERENCE — NOT CURRENT SOURCE OF TRUTH
+
+Retained as TASK-007 migration evidence. Use [Database and Migrations](../../DATABASE_AND_MIGRATIONS.md) and the [TASK-007 handoff](../../TASK-007_FINAL_HANDOFF.md).

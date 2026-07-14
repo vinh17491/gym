@@ -84,3 +84,6 @@ Due to retailer CDNs blocking automated access (Amazon, GNC, Bodybuilding.com, N
 4. **Expand catalog**: Add 800+ more products to reach 1000+ target
 5. **ProductVariants table**: Populate with size/flavor/color options
 6. **ProductSpecifications table**: Populate with full spec data per product
+# HISTORICAL REFERENCE — NOT CURRENT SOURCE OF TRUTH
+
+Retained as TASK-006-era database/media evidence. Use [Database and Migrations](../../DATABASE_AND_MIGRATIONS.md).
