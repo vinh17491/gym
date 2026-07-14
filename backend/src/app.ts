@@ -33,6 +33,8 @@ import adminProductRoutes from './modules/admin-products/admin-products.routes';
 import adminCatalogRoutes from './modules/admin-catalog/admin-catalog.routes';
 import adminVariantRoutes from './modules/admin-variants/admin-variants.routes';
 import adminInventoryRoutes from './modules/admin-inventory/admin-inventory.routes';
+import adminOrderRoutes from './modules/admin-orders/admin-orders.routes';
+import orderRoutes from './modules/orders/orders.routes';
 import path from 'path';
 
 const app = express();
@@ -100,6 +102,8 @@ app.use('/api/admin/products', adminProductRoutes);
 app.use('/api/admin', adminCatalogRoutes);
 app.use('/api/admin', adminVariantRoutes);
 app.use('/api/admin', adminInventoryRoutes);
+app.use('/api/admin', adminOrderRoutes);
+app.use('/api/orders', orderRoutes);
 app.use('/api/media', mediaRoutes);
 
 // CSRF protection for state-changing routes

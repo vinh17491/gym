@@ -1,0 +1,5 @@
+import { z } from 'zod';
+export const orderIdParam=z.object({orderId:z.coerce.number().int().safe().positive()});
+export const paymentNotification=z.object({paymentReference:z.string().trim().max(255).optional()}).strict();
+const createItem=z.object({variantId:z.coerce.number().int().safe().positive(),quantity:z.coerce.number().int().safe().positive()});
+export const createOrder=z.object({customerName:z.string().trim().min(1).max(200),customerPhone:z.string().trim().min(1).max(50),shippingAddressLine1:z.string().trim().min(1).max(255),shippingAddressLine2:z.string().trim().max(255).optional(),shippingCity:z.string().trim().min(1).max(100),shippingState:z.string().trim().max(100).optional(),shippingPostalCode:z.string().trim().max(30).optional(),shippingCountry:z.string().trim().min(1).max(100),items:z.array(createItem).min(1).max(50)}).strict().superRefine((value,ctx)=>{const ids=value.items.map(item=>item.variantId);if(new Set(ids).size!==ids.length)ctx.addIssue({code:z.ZodIssueCode.custom,path:['items'],message:'Duplicate variantId is not allowed'});}).transform(value=>({...value,items:[...value.items].sort((a,b)=>a.variantId-b.variantId)}));

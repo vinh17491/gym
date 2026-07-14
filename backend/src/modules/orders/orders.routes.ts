@@ -1,0 +1,12 @@
+import { NextFunction,Request,Response,Router } from 'express';
+import { authenticate } from '../../middleware/auth';
+import { validate } from '../../middleware/validate';
+import { UserRole } from '../../types';
+import { ordersService } from './orders.service';
+import { createOrder,orderIdParam,paymentNotification } from './orders.validation';
+const router=Router();const wrap=(handler:(req:Request,res:Response,next:NextFunction)=>Promise<void>)=>(req:Request,res:Response,next:NextFunction):void=>{void handler(req,res,next).catch(next)};
+router.use(authenticate);
+router.post('/',validate(createOrder),wrap(async(req,res)=>{if(!req.user){res.status(401).json({success:false,message:'Authentication required'});return;}const data=await ordersService.createOrder(req.user.userId,req.body);res.status(201).json({success:true,data});}));
+router.get('/:orderId',validate(orderIdParam,'params'),wrap(async(req,res)=>{if(!req.user){res.status(401).json({success:false,message:'Authentication required'});return;}const data=await ordersService.getCustomerOrder(Number(req.params.orderId),req.user.userId,req.user.role as UserRole);res.json({success:true,data});}));
+router.post('/:orderId/payment-notification',validate(orderIdParam,'params'),validate(paymentNotification),wrap(async(req,res)=>{if(!req.user){res.status(401).json({success:false,message:'Authentication required'});return;}const data=await ordersService.notifyPayment(Number(req.params.orderId),req.user.userId,req.user.role as UserRole,req.body);res.json({success:true,data});}));
+export default router;

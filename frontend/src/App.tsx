@@ -41,6 +41,10 @@ import AdminProductsPage from './pages/admin/AdminProductsPage';
 import AdminCatalogPage from './pages/admin/AdminCatalogPage';
 import AdminInventoryPage from './pages/admin/AdminInventoryPage';
 import AdminProductVariantsPage from './pages/admin/AdminProductVariantsPage';
+import AdminOrdersPage from './pages/admin/AdminOrdersPage';
+import AdminOrderDetailPage from './pages/admin/AdminOrderDetailPage';
+import CustomerOrderDetailPage from './pages/orders/CustomerOrderDetailPage';
+import CheckoutPage from './pages/checkout/CheckoutPage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated } = useAuthStore();
@@ -93,6 +97,8 @@ export default function App() {
           <Route path="/settings" element={<SettingsPage />} />
           <Route path="/booking" element={<CoachBooking />} />
           <Route path="/profile" element={<UserProfile />} />
+            <Route path="/orders/:orderId" element={<CustomerOrderDetailPage />} />
+            <Route path="/checkout" element={<CheckoutPage />} />
           <Route path="/video" element={<VideoLibrary />} />
           <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
           <Route path="/admin/analytics" element={<AdminRoute><AnalyticsPage /></AdminRoute>} />
@@ -100,6 +106,8 @@ export default function App() {
           <Route path="/admin/revenue" element={<AdminRoute><RevenuePage /></AdminRoute>} />
           <Route path="/admin/backup" element={<AdminRoute><BackupPage /></AdminRoute>} />
           <Route path="/admin/products" element={<AdminRoute><AdminProductsPage /></AdminRoute>} />
+          <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
+          <Route path="/admin/orders/:orderId" element={<AdminRoute><AdminOrderDetailPage /></AdminRoute>} />
           <Route path="/admin/categories" element={<AdminRoute><AdminCatalogPage entity="categories" /></AdminRoute>} />
           <Route path="/admin/brands" element={<AdminRoute><AdminCatalogPage entity="brands" /></AdminRoute>} />
           <Route path="/admin/inventory" element={<AdminRoute><AdminInventoryPage /></AdminRoute>} />

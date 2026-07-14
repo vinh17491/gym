@@ -1,0 +1,22 @@
+import { NextFunction, Request, Response, Router } from 'express';
+import { authenticate, authorize } from '../../middleware/auth';
+import { validate } from '../../middleware/validate';
+import { UserRole } from '../../types';
+import { adminOrdersService } from './admin-orders.service';
+import type { AdminOrderFilters, UpdateOrderStatusInput } from './admin-orders.types';
+import { orderIdParam, orderListQuery, updateOrderStatus } from './admin-orders.validation';
+import { ordersService } from '../orders/orders.service';
+import { adminPaymentStatus } from '../orders/admin-payment.validation';
+import type { AdminPaymentStatusInput } from '../orders/orders.types';
+
+const router = Router();
+const wrap = (handler: (req: Request, res: Response, next: NextFunction) => Promise<void>) => (req: Request, res: Response, next: NextFunction): void => { void handler(req, res, next).catch(next); };
+const orderId = (req: Request): number => Number(req.params.orderId);
+
+router.use(authenticate, authorize(UserRole.ADMIN));
+router.get('/orders', validate(orderListQuery, 'query'), wrap(async (req, res) => { const result = await adminOrdersService.list(req.query as unknown as AdminOrderFilters); res.json({ success: true, data: result }); }));
+router.get('/orders/:orderId', validate(orderIdParam, 'params'), wrap(async (req, res) => { res.json({ success: true, data: await adminOrdersService.detail(orderId(req)) }); }));
+router.patch('/orders/:orderId/status', validate(orderIdParam, 'params'), validate(updateOrderStatus), wrap(async (req, res) => { if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; } const data = await adminOrdersService.updateStatus(orderId(req), req.body as UpdateOrderStatusInput, req.user.userId); res.json({ success: true, data, message: 'Order status updated' }); }));
+router.patch('/orders/:orderId/payment-status', validate(orderIdParam, 'params'), validate(adminPaymentStatus), wrap(async (req, res) => { if (!req.user) { res.status(401).json({ success: false, message: 'Authentication required' }); return; } const data = await ordersService.updatePaymentStatus(orderId(req), req.user.userId, req.body as AdminPaymentStatusInput); res.json({ success: true, data }); }));
+
+export default router;
