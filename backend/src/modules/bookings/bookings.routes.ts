@@ -3,14 +3,19 @@ import { getCoaches, getCoachAvailability, createBooking, getMyBookings, updateB
 import { authenticate } from '../../middleware/auth';
 import { authorize } from '../../middleware/auth';
 import { UserRole } from '../../types';
+import { validate } from '../../middleware/validate';
+import { z } from 'zod';
 
 const router = Router();
 
 router.get('/coaches', getCoaches);
-router.get('/coaches/:id/availability', getCoachAvailability);
+const id=z.object({id:z.coerce.number().int().positive()});
+const booking=z.object({coach_id:z.number().int().positive(),booking_date:z.string().regex(/^\d{4}-\d{2}-\d{2}$/),start_time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),end_time:z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/),notes:z.string().trim().max(500).optional()}).strict();
+const status=z.object({status:z.enum(['confirmed','completed','cancelled','no_show'])}).strict();
+router.get('/coaches/:id/availability', validate(id,'params'), getCoachAvailability);
 
-router.post('/', authenticate, createBooking);
+router.post('/', authenticate, authorize(UserRole.MEMBER), validate(booking), createBooking);
 router.get('/', authenticate, getMyBookings);
-router.put('/:id/status', authenticate, authorize(UserRole.ADMIN, UserRole.COACH), updateBookingStatus);
+router.put('/:id/status', authenticate, validate(id,'params'), validate(status), updateBookingStatus);
 
 export default router;

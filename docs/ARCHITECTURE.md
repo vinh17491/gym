@@ -6,6 +6,8 @@
 
 JWT bearer authentication supplies `userId` and role. Roles are `ADMIN`, `COACH`, and `MEMBER`; backend middleware and ownership queries are authoritative. The frontend uses `ProtectedRoute` and `AdminRoute` for navigation UX, but these do not replace API authorization.
 
+The hardened flow is `JWT -> signature/issuer/audience -> live AuthSessions + Users token_version/role/is_active -> route role check -> controller ownership query`. Refresh credentials are opaque hashed database records and rotate atomically; logout/password/security changes revoke sessions. See [AUTH_RBAC_SECURITY_MODEL.md](AUTH_RBAC_SECURITY_MODEL.md).
+
 Backend features live under `backend/src/modules/`. Legacy modules commonly use route/controller pairs; current commerce modules add validation and service layers. `backend/src/app.ts` mounts middleware, `/uploads`, `/image`, `/media`, health/CSRF endpoints, and all API routers. Central not-found/error middleware formats failures; validation uses Zod or express-validator depending on module.
 
 The frontend uses `frontend/src/App.tsx` for React Router 6 routes, layout guards under `components/layout`, Zustand auth/product state, `api/axios.ts`, typed service modules, and feature pages. Public marketing/catalog pages and protected member/admin pages coexist in the same app.
@@ -25,5 +27,7 @@ Creating an order reserves inventory. Expiration or valid cancellation releases 
 Static product uploads use the configured upload directory and `/uploads`; repository images use `/image`; media uses `/media`. Bank QR accepts a root-relative public URL or HTTPS and rejects unsafe/local schemes.
 
 ## TASK-008 boundary
+
+Auth/RBAC hardening was accepted manually across Member, Coach and Admin browser flows; temporary acceptance resources were removed after verification.
 
 TASK-008 must first audit the existing public Exercises API, `WorkoutPrograms.tsx`, `MediaPlayer.tsx`, User/Role data, media handling, and any Coach-Member/workout tables. It extends the system only after REUSE/EXTEND/REPLACE/DEPRECATED decisions; it must not create a parallel workout system. Commerce code and migrations `0001`-`0005` remain untouched.

@@ -9,26 +9,26 @@ import Input from '../../components/ui/input';
 import { useState } from 'react';
 
 export default function MembersPage() {
-  const { data, loading, error, refetch } = useApi<any[]>('/crm');
+  const { data, loading, error, refetch } = useApi<{items:Array<{id:number;name:string;email:string;phone?:string;role:string;is_active:boolean}>}>('/users?limit=100');
   const [search, setSearch] = useState('');
 
   if (loading) return <LoadingSpinner text="Loading members..." />;
   if (error) return <ErrorState message={error} onRetry={refetch} />;
 
-  const filtered = (data || []).filter((r: any) =>
+  const filtered = (data?.items || []).filter((r) =>
     !search || r.name?.toLowerCase().includes(search.toLowerCase()) || r.email?.toLowerCase().includes(search.toLowerCase())
   );
 
   const columns = [
-    { key: 'name', header: 'Name', render: (r: any) => (
+    { key: 'name', header: 'Name', render: (r: {name:string}) => (
       <div className="flex items-center gap-2">
         <div className="w-7 h-7 rounded-full bg-primary-600/20 flex items-center justify-center text-xs font-medium text-primary-400">{r.name?.[0]}</div>
         <span className="font-medium">{r.name}</span>
       </div>
     )},
     { key: 'email', header: 'Email' },
-    { key: 'tags', header: 'Tags', render: (r: any) => r.tags ? r.tags.split(',').map((t: string) => <Badge key={t} variant="blue" className="mr-1">{t}</Badge>) : '-' },
-    { key: 'lifetime_value', header: 'Value', render: (r: any) => <span className="font-mono">${Number(r.lifetime_value || 0).toFixed(2)}</span> },
+    { key: 'role', header: 'Role', render: (r: {role:string}) => <Badge variant="blue">{r.role}</Badge> },
+    { key: 'is_active', header: 'Status', render: (r: {is_active:boolean}) => r.is_active?'Active':'Inactive' },
   ];
 
   return (

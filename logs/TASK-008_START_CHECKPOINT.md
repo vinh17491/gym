@@ -4,7 +4,7 @@ TASK-007 baseline: FULL_TASK_007_COMPLETE
 Base branch: 007c-order-management
 Base commit: 427ad52996961648ffc622ca1bf2999a5aab3df4
 TASK-008 branch: 008-workout-programs-progress
-Next migration: 0006 (DO NOT CREATE before Discovery Gate)
+Next migration: 0007 or later (DO NOT CREATE before Discovery Gate; `0006` is reserved by auth/RBAC hardening)
 
 Locked scope: Exercise Library/Programs; Member Assignments/Schedules/Sessions/
 snapshots/Set Logs; progress and final acceptance.
@@ -18,3 +18,5 @@ Read first: `docs/TASK-008_DISCOVERY_CHECKLIST.md`, then
 `docs/DATABASE_AND_MIGRATIONS.md` and `docs/API_AND_AUTHORIZATION.md`.
 Exact next steps: audit source/database; classify REUSE/EXTEND/REPLACE/DEPRECATED;
 resolve Coach-Member and media decisions; record evidence; only then design 0006.
+
+Auth/RBAC hardening closure completed separately; TASK-008 remains NOT STARTED.

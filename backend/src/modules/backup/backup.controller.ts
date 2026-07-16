@@ -17,7 +17,7 @@ export async function createBackup(req: Request, _res: Response, next: NextFunct
     await query(sqlCmd);
     const stats = fs.statSync(filepath);
     await query("INSERT INTO BackupLogs (type, status, file_path, file_size, duration_seconds, verified, created_by) OUTPUT INSERTED.* VALUES (@type, 'completed', @fp, @fs, 0, 1, @uid)", { type, fp: filepath, fs: stats.size, uid: req.user!.userId });
-    sendSuccess(_res, { filepath, size: stats.size }, 'Backup created successfully');
+    sendSuccess(_res, { id: filename, size: stats.size }, 'Backup created successfully');
   } catch (err) { next(err); }
 }
 
@@ -32,7 +32,8 @@ export async function restoreBackup(req: Request, _res: Response, next: NextFunc
   try {
     const backup = await query('SELECT * FROM BackupLogs WHERE id=@id', { id: req.params.id });
     if (backup.recordset.length === 0) throw new AppError(404, 'Backup not found');
-    const filepath = backup.recordset[0].file_path;
+    const backupRoot=path.resolve(config.backup.dir);const filepath=path.resolve(String(backup.recordset[0].file_path));
+    if(!filepath.startsWith(backupRoot+path.sep)||path.extname(filepath).toLowerCase()!=='.bak'||!fs.existsSync(filepath))throw new AppError(400,'Invalid backup file');
     await query("ALTER DATABASE [" + config.db.database + "] SET SINGLE_USER WITH ROLLBACK IMMEDIATE");
     try {
       await query("RESTORE DATABASE [" + config.db.database + "] FROM DISK=N'" + filepath + "' WITH REPLACE");

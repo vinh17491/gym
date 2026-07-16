@@ -7,22 +7,9 @@ import { registerSchema, loginSchema } from './auth.validation';
 import { authLimiter } from '../../middleware/rateLimiter';
 import { z } from 'zod';
 import multer from 'multer';
-import path from 'path';
-import { mkdirSync } from 'fs';
-
-const uploadDir = path.join(process.cwd(), 'uploads', 'avatars');
-try { mkdirSync(uploadDir, { recursive: true }); } catch {}
-
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, uploadDir),
-  filename: (_req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `avatar-${Date.now()}${ext}`);
-  }
-});
-const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 }, fileFilter: (_req, file, cb) => {
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 5 * 1024 * 1024, files: 1 }, fileFilter: (_req, file, cb) => {
   const allowed = ['image/jpeg', 'image/png', 'image/webp'];
-  cb(null, allowed.includes(file.mimetype));
+  allowed.includes(file.mimetype) ? cb(null, true) : cb(new Error('Only JPEG, PNG and WebP images are allowed'));
 }});
 
 const router = Router();
@@ -34,13 +21,13 @@ const updateProfileSchema = z.object({
 
 const changePasswordSchema = z.object({
   current_password: z.string().min(1),
-  new_password: z.string().min(6).max(100),
-});
+  new_password: z.string().min(10).max(128).regex(/[a-z]/).regex(/[A-Z]/).regex(/[0-9]/),
+}).strict();
 
 router.post('/register', authLimiter, validate(registerSchema), register);
 router.post('/login', authLimiter, validate(loginSchema), login);
 router.post('/logout', authenticate, logout);
-router.post('/refresh', refreshToken);
+router.post('/refresh', authLimiter, validate(z.object({ refreshToken: z.string().min(32).max(256) }).strict()), refreshToken);
 router.get('/me', authenticate, getMe);
 
 router.put('/me', authenticate, validate(updateProfileSchema), updateMe);

@@ -24,9 +24,9 @@ const subscribeSchema = z.object({
 });
 
 router.get('/', getPlans);
-router.get('/my-membership', authenticate, getMyMembership);
-router.post('/subscribe', authenticate, validate(subscribeSchema), subscribe);
-router.post('/cancel', authenticate, cancelMembership);
+router.get('/my-membership', authenticate, authorize(UserRole.MEMBER), getMyMembership);
+router.post('/subscribe', authenticate, authorize(UserRole.MEMBER), validate(subscribeSchema), subscribe);
+router.post('/cancel', authenticate, authorize(UserRole.MEMBER), cancelMembership);
 
 router.post('/', authenticate, authorize(UserRole.ADMIN), validate(planSchema), createPlan);
 router.put('/:id', authenticate, authorize(UserRole.ADMIN), validate(planSchema), updatePlan);

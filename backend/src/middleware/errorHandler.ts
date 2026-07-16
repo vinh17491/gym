@@ -8,8 +8,9 @@ export class AppError extends Error {
 
 export function errorHandler(err: Error, req: Request, res: Response, _next: NextFunction) {
   if (err instanceof AppError) return sendError(res, err.message, err.statusCode);
-  console.error('ERROR:', err);
-  logger.error('Unhandled:', { error: err.message, stack: err.stack });
+  if ([2601,2627].includes((err as Error & {number?:number}).number||0)) return sendError(res,'Resource conflict',409);
+  const diagnostic=err as Error & {number?:number;code?:string};
+  logger.error('Unhandled request error', { method:req.method, path:req.path, error:err.name, number:diagnostic.number, code:diagnostic.code });
   return sendError(res, 'Internal Server Error', 500);
 }
 

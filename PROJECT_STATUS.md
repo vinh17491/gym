@@ -2,6 +2,10 @@
 
 Updated: 2026-07-15 (Asia/Saigon)
 
+## Auth/RBAC hardening (current)
+
+Authentication/RBAC hardening is in progress on `hotfix/auth-rbac-hardening`. Migration `0006_auth_session_security.sql` is reserved for session security (token versioning, hashed rotating refresh sessions, session revocation and booking-slot uniqueness), not TASK-008. TASK-008 remains **NOT STARTED** and must not use `0006`.
+
 ## Current baseline
 
 - Current branch: `008-workout-programs-progress`
@@ -36,3 +40,5 @@ Current blocker: none. Exact next action: execute the [TASK-008 Discovery Checkl
 - TASK-007 proof: [docs/TASK-007_FINAL_HANDOFF.md](docs/TASK-007_FINAL_HANDOFF.md)
 - TASK-008 scope: [docs/TASK-008_IMPLEMENTATION_SPEC.md](docs/TASK-008_IMPLEMENTATION_SPEC.md)
 - Database rules: [docs/DATABASE_AND_MIGRATIONS.md](docs/DATABASE_AND_MIGRATIONS.md)
+
+Auth/RBAC closure: manual browser acceptance PASS on `5502`/`5501`; temporary resources and isolated database were cleaned up; canonical Products 167, Users 15, Orders 1 and no acceptance fixtures were verified.

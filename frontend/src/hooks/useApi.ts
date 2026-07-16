@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axios';
 
-export function useApi<T>(url: string, deps: any[] = []) {
+export function useApi<T>(url: string, deps: readonly unknown[] = []) {
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -11,8 +11,9 @@ export function useApi<T>(url: string, deps: any[] = []) {
     try {
       const { data: res } = await api.get(url);
       setData(res.data);
-    } catch (err: any) {
-      const msg = err.response?.data?.message || err.message || 'An error occurred';
+    } catch (err: unknown) {
+      const value=err as {response?:{data?:{message?:string}};message?:string};
+      const msg = value.response?.data?.message || value.message || 'An error occurred';
       setError(msg);
     } finally {
       setLoading(false);

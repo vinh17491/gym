@@ -11,7 +11,7 @@ export interface IUser {
   last_login_at: Date | null; created_at: Date; updated_at: Date;
 }
 
-export interface IJwtPayload { userId: number; email: string; role: UserRole; }
+export interface IJwtPayload { userId: number; email: string; role: UserRole; tokenVersion: number; sessionId: number; }
 
 export interface IPagination { page: number; limit: number; total: number; totalPages: number; }
 

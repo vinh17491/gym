@@ -2,6 +2,10 @@
 
 Updated 2026-07-15. Older roadmap statements that cancelled TASK-008 are superseded.
 
+## Security hardening interlock
+
+Auth/RBAC hardening occupies migration `0006` and is independent of TASK-008. TASK-008 remains not started; its first possible migration number is now `0007`, only after its Discovery Gate.
+
 ## Completed foundation
 
 | Task | Status | Outcome |
@@ -24,3 +28,5 @@ Dependencies and gates: branch from TASK-007 final commit; complete the [Discove
 Out of scope: AI, camera, pose estimation, automatic rep counting, medical diagnosis, nutrition, wearables, social feed/gamification expansion, live coaching, and new payment work.
 
 Final project completion requires all three subtasks, migrations and checksums, backend/frontend build gates, authorization/IDOR/concurrency tests, Admin/Coach/Member browser acceptance, acceptance cleanup, canonical DB integrity, documentation, commit, and branch push.
+
+Auth/RBAC closure: manual browser acceptance and offline cleanup passed; no browser automation was rerun.

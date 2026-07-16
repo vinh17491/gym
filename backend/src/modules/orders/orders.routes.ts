@@ -1,5 +1,6 @@
 import { NextFunction, Request, Response, Router } from "express";
-import { authenticate } from "../../middleware/auth";
+import { authenticate, authorize } from "../../middleware/auth";
+import { UserRole } from "../../types";
 import { validate } from "../../middleware/validate";
 import { ordersService } from "./orders.service";
 import {
@@ -22,7 +23,7 @@ const wrap =
   (req: Request, res: Response, next: NextFunction): void => {
     void handler(req, res, next).catch(next);
   };
-router.use(authenticate);
+router.use(authenticate, authorize(UserRole.MEMBER));
 router.post(
   "/",
   validate(createOrder),

@@ -13,6 +13,7 @@ Filenames must match `NNNN_description.sql` and execute lexicographically. Each 
 | 0003 | Orders, OrderItems and OrderStatusHistory |
 | 0004 | PaymentStatusHistory |
 | 0005 | Reservation expiration metadata/index |
+| 0006 | Auth session security: `Users.token_version`, hashed rotating `AuthSessions`, and active booking-slot uniqueness |
 
 Verified canonical baseline after TASK-007: Products 167, ProductVariants 167, Inventory 167, ProductImages 1, Orders 0, PaymentStatusHistory 0. Inventory enforces non-negative `on_hand`, `0 <= reserved <= on_hand`, and computed `available = on_hand - reserved`. Products own variants/images; variants own inventory; Orders own item snapshots and immutable status/payment history. Expiration releases eligible unpaid reservations; delivery consumes reserved/on-hand stock.
 
@@ -20,4 +21,6 @@ Before applying a migration: confirm target identity, create a canonical backup 
 
 Acceptance uses an isolated database such as `GYMFIT_DB_TASK008_ACCEPTANCE_<timestamp>` restored from a verified baseline. Verify identity before mutation, run acceptance there, clean up, and re-check canonical counts/integrity.
 
-TASK-008 reserves `0006` for workout foundation, `0007` for Coach-Member/assignment/session data, and `0008` only if progress measurements require persistent storage. These are plans, not existing migrations. Discovery may adapt tables but not numbering. See the [full specification](TASK-008_IMPLEMENTATION_SPEC.md).
+TASK-008 is not started and may not reuse `0006`; any future numbering must be chosen only after its Discovery Gate. See the [full specification](TASK-008_IMPLEMENTATION_SPEC.md).
+
+Auth/RBAC closure verified canonical Products 167, Users 15, Orders 1; the existing Order was preserved. Isolated database `GYMFIT_DB_AUTH_RBAC_ACCEPTANCE_1784111000000` was dropped and confirmed absent; no acceptance fixtures remain canonically.

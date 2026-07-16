@@ -1,4 +1,5 @@
 import rateLimit from 'express-rate-limit';
+import { config } from '../config/config';
 
 // Rate limiters use memory store (Redis optional for distributed limits)
 export const apiLimiter = rateLimit({
@@ -16,7 +17,7 @@ export const apiLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: 50,
+  max: config.nodeEnv === 'test' || config.db.database.startsWith('GYMFIT_DB_AUTH_RBAC_ACCEPTANCE_') ? 1000 : 10,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,
@@ -24,7 +25,7 @@ export const authLimiter = rateLimit({
   message: {
     success: false,
     error: 'Too many login attempts, please try again later.',
-    retryAfter: Math.ceil(60 / 1000),
+    retryAfter: 60,
   },
 });
 

@@ -47,20 +47,22 @@ import CustomerOrderDetailPage from './pages/orders/CustomerOrderDetailPage';
 import CheckoutPage from './pages/checkout/CheckoutPage';
 import CartPage from './pages/cart/CartPage';
 import CustomerOrdersPage from './pages/orders/CustomerOrdersPage';
+import { canAccess, roleHome, Role } from './auth/accessPolicy';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated,initialized } = useAuthStore();
   const location=useLocation();
+  if(!initialized)return null;
   if (!isAuthenticated) return <Navigate to="/login" replace state={{from:location}} />;
   return <>{children}</>;
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { user, isAuthenticated } = useAuthStore();
-  if (!isAuthenticated) return <Navigate to="/login" replace />;
-  if (!user) return <div className="min-h-screen bg-[#020617] flex items-center justify-center"><div className="text-white">Loading...</div></div>;
-  return user.role === 'admin' ? <>{children}</> : <Navigate to="/dashboard" replace />;
+function AccessRoute({path,children,roles}:{path:string;children:React.ReactNode;roles?:Role[]}){
+  const user=useAuthStore(state=>state.user);if(!user)return null;
+  return (roles?roles.includes(user.role):canAccess(user.role,path))?<>{children}</>:<Navigate to="/access-denied" replace/>;
 }
+function GuestRoute({children}:{children:React.ReactNode}){const {user,isAuthenticated}=useAuthStore();return isAuthenticated&&user?<Navigate to={roleHome(user.role)} replace/>:<>{children}</>;}
+function AccessDenied(){const user=useAuthStore(state=>state.user);return <div className="min-h-[60vh] flex flex-col items-center justify-center gap-4"><h1 className="text-3xl font-bold">Access denied</h1><p className="text-slate-400">Your account is not allowed to open this page.</p><a className="btn-primary" href={user?roleHome(user.role):'/login'}>Return safely</a></div>;}
 
 export default function App() {
   return (
@@ -85,39 +87,40 @@ export default function App() {
         <Route path="/cart" element={<MarketingHeaderWrapper><CartPage /></MarketingHeaderWrapper>} />
 
         {/* AUTH */}
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/login" element={<GuestRoute><LoginPage /></GuestRoute>} />
+        <Route path="/register" element={<GuestRoute><RegisterPage /></GuestRoute>} />
 
         {/* PROTECTED */}
         <Route element={<ProtectedRoute><Layout /></ProtectedRoute>}>
           <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/members" element={<MembersPage />} />
-          <Route path="/referral" element={<ReferralPage />} />
-          <Route path="/coupons" element={<CouponPage />} />
-          <Route path="/loyalty" element={<LoyaltyPage />} />
-          <Route path="/tickets" element={<TicketPage />} />
-          <Route path="/invoices" element={<InvoicePage />} />
-          <Route path="/crm" element={<CRMPage />} />
+          <Route path="/members" element={<AccessRoute path="/members"><MembersPage /></AccessRoute>} />
+          <Route path="/referral" element={<AccessRoute path="/referral"><ReferralPage /></AccessRoute>} />
+          <Route path="/coupons" element={<AccessRoute path="/coupons"><CouponPage /></AccessRoute>} />
+          <Route path="/loyalty" element={<AccessRoute path="/loyalty"><LoyaltyPage /></AccessRoute>} />
+          <Route path="/tickets" element={<AccessRoute path="/tickets"><TicketPage /></AccessRoute>} />
+          <Route path="/invoices" element={<AccessRoute path="/invoices"><InvoicePage /></AccessRoute>} />
+          <Route path="/crm" element={<AccessRoute path="/crm"><CRMPage /></AccessRoute>} />
           <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/booking" element={<CoachBooking />} />
+          <Route path="/booking" element={<AccessRoute path="/booking"><CoachBooking /></AccessRoute>} />
           <Route path="/profile" element={<UserProfile />} />
-            <Route path="/orders/:orderId" element={<CustomerOrderDetailPage />} />
-            <Route path="/orders" element={<CustomerOrdersPage />} />
-            <Route path="/checkout" element={<CheckoutPage />} />
-          <Route path="/video" element={<VideoLibrary />} />
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="/admin/analytics" element={<AdminRoute><AnalyticsPage /></AdminRoute>} />
-          <Route path="/admin/audit" element={<AdminRoute><AuditPage /></AdminRoute>} />
-          <Route path="/admin/revenue" element={<AdminRoute><RevenuePage /></AdminRoute>} />
-          <Route path="/admin/backup" element={<AdminRoute><BackupPage /></AdminRoute>} />
-          <Route path="/admin/products" element={<AdminRoute><AdminProductsPage /></AdminRoute>} />
-          <Route path="/admin/orders" element={<AdminRoute><AdminOrdersPage /></AdminRoute>} />
-          <Route path="/admin/orders/:orderId" element={<AdminRoute><AdminOrderDetailPage /></AdminRoute>} />
-          <Route path="/admin/categories" element={<AdminRoute><AdminCatalogPage entity="categories" /></AdminRoute>} />
-          <Route path="/admin/brands" element={<AdminRoute><AdminCatalogPage entity="brands" /></AdminRoute>} />
-          <Route path="/admin/inventory" element={<AdminRoute><AdminInventoryPage /></AdminRoute>} />
-          <Route path="/admin/products/:productId/variants" element={<AdminRoute><AdminProductVariantsPage /></AdminRoute>} />
-          <Route path="/coach" element={<CoachDashboard />} />
+          <Route path="/orders/:orderId" element={<AccessRoute path="/orders"><CustomerOrderDetailPage /></AccessRoute>} />
+          <Route path="/orders" element={<AccessRoute path="/orders"><CustomerOrdersPage /></AccessRoute>} />
+          <Route path="/checkout" element={<AccessRoute path="/checkout"><CheckoutPage /></AccessRoute>} />
+          <Route path="/video" element={<AccessRoute path="/video"><VideoLibrary /></AccessRoute>} />
+          <Route path="/admin" element={<AccessRoute path="/admin"><AdminDashboard /></AccessRoute>} />
+          <Route path="/admin/analytics" element={<AccessRoute path="/admin"><AnalyticsPage /></AccessRoute>} />
+          <Route path="/admin/audit" element={<AccessRoute path="/admin"><AuditPage /></AccessRoute>} />
+          <Route path="/admin/revenue" element={<AccessRoute path="/admin"><RevenuePage /></AccessRoute>} />
+          <Route path="/admin/backup" element={<AccessRoute path="/admin"><BackupPage /></AccessRoute>} />
+          <Route path="/admin/products" element={<AccessRoute path="/admin"><AdminProductsPage /></AccessRoute>} />
+          <Route path="/admin/orders" element={<AccessRoute path="/admin"><AdminOrdersPage /></AccessRoute>} />
+          <Route path="/admin/orders/:orderId" element={<AccessRoute path="/admin"><AdminOrderDetailPage /></AccessRoute>} />
+          <Route path="/admin/categories" element={<AccessRoute path="/admin"><AdminCatalogPage entity="categories" /></AccessRoute>} />
+          <Route path="/admin/brands" element={<AccessRoute path="/admin"><AdminCatalogPage entity="brands" /></AccessRoute>} />
+          <Route path="/admin/inventory" element={<AccessRoute path="/admin"><AdminInventoryPage /></AccessRoute>} />
+          <Route path="/admin/products/:productId/variants" element={<AccessRoute path="/admin"><AdminProductVariantsPage /></AccessRoute>} />
+          <Route path="/coach" element={<AccessRoute path="/coach"><CoachDashboard /></AccessRoute>} />
+          <Route path="/access-denied" element={<AccessDenied/>}/>
         </Route>
 
         {/* 404 */}

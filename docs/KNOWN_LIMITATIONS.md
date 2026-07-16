@@ -7,5 +7,8 @@
 - Product image coverage is intentionally limited to verified assets (canonical baseline: 1 ProductImages row).
 - Final TASK-007 backend lint passed with 58 pre-existing warnings; frontend production build passed with a non-blocking chunk-size warning.
 - Legacy operational modules remain outside TASK-008 refactoring scope and use mixed controller/service patterns.
+- Browser-local token persistence remains a deliberate compatibility constraint; XSS prevention, exact CORS allowlists and strict CSP/Helmet remain important. A future cookie-based redesign requires a separate CSRF threat-model review.
 
 Real Gmail, Bank/QR, authenticated Customer and Admin browser flows are verified; older contrary limitations are fixed and superseded.
+
+Auth/RBAC closure reports manual browser evidence only and does not claim Codex browser automation PASS.

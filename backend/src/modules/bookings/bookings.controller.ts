@@ -35,7 +35,7 @@ export async function getCoachAvailability(req: Request, res: Response, next: Ne
     );
 
     const allSlots = ['09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'];
-    const bookedTimes = booked.recordset.map((r: any) => r.start_time?.substring(0, 5));
+    const bookedTimes = booked.recordset.map((r: { start_time?: string }) => r.start_time?.substring(0, 5));
     const available = allSlots.filter(s => !bookedTimes.includes(s));
 
     sendSuccess(res, { date: targetDate, coach_id: coachId, available_slots: available, booked_slots: bookedTimes });
@@ -46,6 +46,10 @@ export async function createBooking(req: Request, res: Response, next: NextFunct
   try {
     const userId = req.user!.userId;
     const { coach_id, booking_date, start_time, end_time, notes } = req.body;
+    if(new Date(`${booking_date}T${start_time}:00`).getTime()<=Date.now()) throw new AppError(400,'Booking must be in the future');
+    if(start_time>=end_time) throw new AppError(400,'End time must be after start time');
+    const coach=await query("SELECT id FROM Users WHERE id=@id AND role='coach' AND is_active=1",{id:coach_id});
+    if(!coach.recordset[0]) throw new AppError(404,'Coach not found');
 
     const conflict = await query(
       `SELECT id FROM Bookings
@@ -59,7 +63,7 @@ export async function createBooking(req: Request, res: Response, next: NextFunct
       `INSERT INTO Bookings (coach_id, member_id, booking_date, start_time, end_time, status, notes, created_at)
        OUTPUT INSERTED.*
        VALUES (@coach_id, @userId, @booking_date, @start_time, @end_time, 'pending', @notes, GETDATE())`,
-      { coach_id, userId, booking_date, start_time, end_time: end_time || '10:00', notes: notes || null }
+      { coach_id, userId, booking_date, start_time, end_time, notes: notes || null }
     );
 
     sendSuccess(res, result.recordset[0], 'Booking created', 201);
@@ -81,6 +85,8 @@ export async function getMyBookings(req: Request, res: Response, next: NextFunct
          ORDER BY b.booking_date DESC, b.start_time DESC`,
         { userId }
       );
+    } else if(role === 'admin') {
+      result=await query(`SELECT b.*,u.name member_name,c.name coach_name FROM Bookings b JOIN Users u ON b.member_id=u.id JOIN Users c ON b.coach_id=c.id ORDER BY b.booking_date DESC,b.start_time DESC`);
     } else {
       result = await query(
         `SELECT b.*, u.name as member_name, c.name as coach_name
@@ -98,15 +104,13 @@ export async function getMyBookings(req: Request, res: Response, next: NextFunct
 
 export async function updateBookingStatus(req: Request, res: Response, next: NextFunction) {
   try {
-    const { id } = req.params;
-    const { status } = req.body;
-    const valid = ['pending', 'confirmed', 'completed', 'cancelled'];
-    if (!valid.includes(status)) throw new AppError(400, 'Invalid status');
-
-    const result = await query(
-      `UPDATE Bookings SET status=@status, updated_at=GETDATE() OUTPUT INSERTED.* WHERE id=@id`,
-      { id, status }
-    );
+    const id=Number(req.params.id); const {status}=req.body; const role=req.user!.role;
+    const current=await query<{status:string}>('SELECT status FROM Bookings WHERE id=@id',{id});
+    if(!current.recordset[0]) throw new AppError(404,'Booking not found');
+    const transitions:Record<string,string[]>={pending:['confirmed','cancelled'],confirmed:['completed','cancelled','no_show'],completed:[],cancelled:[],no_show:[]};
+    if(!transitions[current.recordset[0].status]?.includes(status)) throw new AppError(409,'Invalid booking status transition');
+    let scope=''; if(role==='coach')scope=' AND coach_id=@uid'; else if(role==='member'){scope=' AND member_id=@uid';if(status!=='cancelled')throw new AppError(403,'Forbidden');} else if(role!=='admin')throw new AppError(403,'Forbidden');
+    const result = await query(`UPDATE Bookings SET status=@status,updated_at=GETDATE() OUTPUT INSERTED.* WHERE id=@id${scope}`,{id,status,uid:req.user!.userId});
     if (result.recordset.length === 0) throw new AppError(404, 'Booking not found');
     sendSuccess(res, result.recordset[0], 'Booking updated');
   } catch (err) { next(err); }

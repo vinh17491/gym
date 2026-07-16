@@ -8,7 +8,7 @@ Keep `backend/.env` local and ignored. `.env.example` must contain placeholders 
 |---|---|---|
 | Server | `PORT`, `NODE_ENV` | API port and runtime mode |
 | Database | `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_TRUSTED_CONNECTION`, `DB_TRUST_SERVER_CERTIFICATE` | SQL Server connection mode/target |
-| JWT | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES` | Token signing and lifetime |
+| JWT | `JWT_ACCESS_SECRET`, `JWT_REFRESH_SECRET`, `JWT_ACCESS_EXPIRES`, `JWT_REFRESH_EXPIRES`, `JWT_ISSUER`, `JWT_AUDIENCE` | Token signing, validation and lifetime |
 | CORS/session | `CORS_ORIGIN`, `REDIS_URL` | Allowed frontend and optional Redis session/rate-limit backing |
 | Upload | `UPLOAD_DIR`, `MAX_FILE_SIZE` | Upload location and byte limit |
 | Backup | `BACKUP_DIR`, `BACKUP_RETENTION_DAYS` | Local backup location/retention |
@@ -24,3 +24,7 @@ Keep `backend/.env` local and ignored. `.env.example` must contain placeholders 
 Start locally with `npm run dev` in both `backend/` and `frontend/`. Production scripts verified from package files are backend `npm run build` then `npm start`, and frontend `npm run build` then `npm run preview`.
 
 Troubleshooting: verify `/api/health`, `CORS_ORIGIN`, JWT expiry, SQL Server host/database identity, upload directory permissions and the distinction between `MAIL_*` readiness and legacy `SMTP_*`. Never print the environment file while diagnosing.
+
+Acceptance uses a separately verified isolated `DB_NAME`; temporary services must be stopped and the database dropped after acceptance.
+
+Set `CORS_ORIGIN` to an exact comma-separated allowlist; bearer-token mode does not use browser sessions. Never log access/refresh tokens or any environment secret.

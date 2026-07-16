@@ -6,7 +6,7 @@ import { validateCoupon, createCoupon, listCoupons, getCouponStats } from './cou
 import { createCouponSchema, applyCouponSchema } from './coupon.validation';
 
 const router = Router();
-router.post('/validate', authenticate, validate(applyCouponSchema), validateCoupon);
+router.post('/validate', authenticate, authorize(UserRole.MEMBER), validate(applyCouponSchema), validateCoupon);
 router.post('/', authenticate, authorize(UserRole.ADMIN), validate(createCouponSchema), createCoupon);
 router.get('/', authenticate, authorize(UserRole.ADMIN), listCoupons);
 router.get('/stats', authenticate, authorize(UserRole.ADMIN), getCouponStats);

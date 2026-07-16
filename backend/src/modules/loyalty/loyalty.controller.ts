@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { query, executeProc } from '../../config/database';
+import { query, executeProc, getPool, sql } from '../../config/database';
 import { sendSuccess } from '../../utils/response';
 import { AppError } from '../../middleware/errorHandler';
 
@@ -45,10 +45,6 @@ export async function redeemReward(req: Request, _res: Response, next: NextFunct
 }
 
 export async function loginDailyPoints(req: Request, _res: Response, next: NextFunction) {
-  try {
-    const today = await query(`SELECT id FROM PointTransactions WHERE user_id=@uid AND source='login' AND CAST(created_at AS DATE)=CAST(GETDATE() AS DATE)`, { uid: req.user!.userId });
-    if (today.recordset.length > 0) return sendSuccess(_res, null, 'Already claimed today');
-    await executeProc('sp_AddPoints', { UserID: req.user!.userId, Points: 10, Source: 'login', Description: 'Daily login bonus' });
-    sendSuccess(_res, { points_earned: 10 }, 'Daily login points claimed');
-  } catch (err) { next(err); }
+  const tx=new sql.Transaction(await getPool());
+  try {await tx.begin(sql.ISOLATION_LEVEL.SERIALIZABLE);const request=new sql.Request(tx).input('uid',sql.Int,req.user!.userId);const today=await request.query(`SELECT id FROM PointTransactions WITH(UPDLOCK,HOLDLOCK) WHERE user_id=@uid AND source='login' AND CAST(created_at AS DATE)=CAST(GETDATE() AS DATE)`);if(today.recordset[0]){await tx.commit();return sendSuccess(_res,null,'Already claimed today');}await request.query(`IF NOT EXISTS(SELECT 1 FROM Points WHERE user_id=@uid) INSERT Points(user_id,balance,lifetime_earned,lifetime_spent) VALUES(@uid,0,0,0); UPDATE Points SET balance=balance+10,lifetime_earned=lifetime_earned+10,updated_at=GETDATE() WHERE user_id=@uid; INSERT PointTransactions(user_id,type,points,source,description) VALUES(@uid,'earn',10,'login','Daily login bonus')`);await tx.commit();sendSuccess(_res,{points_earned:10},'Daily login points claimed');}catch(err){try{await tx.rollback();}catch{}next(err);}
 }

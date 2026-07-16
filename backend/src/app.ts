@@ -1,13 +1,10 @@
 import express from 'express';
 import cors from 'cors';
-import helmet from 'helmet';
 import compression from 'compression';
 import morgan from 'morgan';
 import { config } from './config/config';
 import { errorHandler, notFoundHandler } from './middleware/errorHandler';
 import { apiLimiter } from './middleware/rateLimiter';
-import { sessionMiddleware } from './middleware/session';
-import { csrfProtection, generateCsrfToken } from './middleware/csrf';
 import { sanitizeMiddleware } from './middleware/sanitize';
 import { createAuditMiddleware } from './middleware/auditLogger';
 import { securityHeaders } from './middleware/securityHeaders';
@@ -35,6 +32,7 @@ import adminVariantRoutes from './modules/admin-variants/admin-variants.routes';
 import adminInventoryRoutes from './modules/admin-inventory/admin-inventory.routes';
 import adminOrderRoutes from './modules/admin-orders/admin-orders.routes';
 import orderRoutes from './modules/orders/orders.routes';
+import userRoutes from './modules/users/users.routes';
 import { startOrderExpirationRunner } from './modules/orders/order-expiration.runner';
 import path from 'path';
 
@@ -43,12 +41,11 @@ startOrderExpirationRunner();
 
 // Security middleware stack
 app.use(securityHeaders);
-app.use(helmet());
-app.use(cors({ origin: config.cors.origin, credentials: true }));
+const allowedOrigins=config.cors.origin.split(',').map(value=>value.trim()).filter(Boolean);
+app.use(cors({ origin:(origin,callback)=>!origin||allowedOrigins.includes(origin)?callback(null,true):callback(new Error('Origin not allowed')), credentials:false }));
 app.use(compression());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(sessionMiddleware);
 app.use(sanitizeMiddleware);
 app.use(createAuditMiddleware());
 app.use(apiLimiter);
@@ -76,12 +73,6 @@ app.use('/media', express.static('public/media', {
 
 app.get('/api/health', (_req, res) => res.json({ success: true, message: 'Gymer API running', timestamp: new Date().toISOString() }));
 
-// CSRF token endpoint
-app.get('/api/csrf-token', (req, res) => {
-  const token = generateCsrfToken(req);
-  res.json({ csrfToken: token });
-});
-
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/referral', referralRoutes);
@@ -106,10 +97,8 @@ app.use('/api/admin', adminVariantRoutes);
 app.use('/api/admin', adminInventoryRoutes);
 app.use('/api/admin', adminOrderRoutes);
 app.use('/api/orders', orderRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/media', mediaRoutes);
-
-// CSRF protection for state-changing routes
-app.use(csrfProtection);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

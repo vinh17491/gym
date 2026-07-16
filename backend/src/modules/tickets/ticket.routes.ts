@@ -7,9 +7,10 @@ import { create, list, getById, reply, updateStatus } from './ticket.controller'
 import { z } from 'zod';
 
 const router = Router();
-router.post('/', authenticate, validate(createTicketSchema), create);
+const id=z.object({id:z.coerce.number().int().positive()});
+router.post('/', authenticate, authorize(UserRole.MEMBER), validate(createTicketSchema), create);
 router.get('/', authenticate, list);
-router.get('/:id', authenticate, getById);
-router.post('/:id/reply', authenticate, validate(replyTicketSchema), reply);
-router.patch('/:id/status', authenticate, authorize(UserRole.ADMIN, UserRole.COACH), validate(z.object({ status: z.enum(['open','pending','resolved','closed']) })), updateStatus);
+router.get('/:id', authenticate, validate(id,'params'), getById);
+router.post('/:id/reply', authenticate, validate(id,'params'), validate(replyTicketSchema), reply);
+router.patch('/:id/status', authenticate, authorize(UserRole.ADMIN, UserRole.COACH), validate(id,'params'), validate(z.object({ status: z.enum(['open','pending','resolved','closed']) }).strict()), updateStatus);
 export default router;

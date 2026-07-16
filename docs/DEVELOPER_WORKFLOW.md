@@ -20,6 +20,8 @@ Current commerce modules (`products`, `admin-products`, `admin-catalog`, `admin-
 
 Login returns JWT state used by the Axios client and Zustand auth store. Protected/Admin frontend routes improve UX. Backend `authenticate`, `authorize`, and owner-filtered queries provide actual security. Never accept a customer identity from request body when it can be derived from the JWT.
 
+Auth hardening uses bearer access tokens backed by live `AuthSessions`; refresh tokens are opaque and one-time rotating. Use the shared frontend access policy for every new protected route/navigation entry, and add backend role plus ownership enforcement for every API route. See [AUTH_RBAC_SECURITY_MODEL.md](AUTH_RBAC_SECURITY_MODEL.md).
+
 Product stock is variant-specific and `available = on_hand - reserved`. Do not bypass service transactions, transition rules, history writes, expiration handling or ownership filters.
 
 ## Checks and migrations
@@ -39,3 +41,5 @@ TASK-008 uses `008-workout-programs-progress` from final TASK-007 commit `427ad5
 Build/lint commands verified from package scripts: backend `npm run build` and `npm run lint`; frontend `npm run build` (TypeScript runs through the configured Vite build). Use targeted checks during implementation and the specification's Build Gates rather than rebuilding after every file.
 
 Handoff requires updated canonical docs, link/stale/secret scans, `git diff --check`, acceptance cleanup, reviewed staged paths, scoped commit, pushed branch and exact commit reporting. Never commit `.env`, raw logs, backups, uploads, browser profiles, acceptance artifacts, `node_modules` or `dist`.
+
+Auth/RBAC final closure records manual browser acceptance as PASS. Existing final build PASS was reused; API matrix, IDOR, concurrency and TASK-007 commerce checks were not rerun.

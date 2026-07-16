@@ -2,7 +2,7 @@
 import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
-import { Dumbbell, Mail, Lock, Eye, EyeOff, User, Phone, MapPin, AlertCircle, CheckCircle, Users } from 'lucide-react';
+import { Dumbbell, Mail, Lock, Eye, EyeOff, User, Phone, AlertCircle, CheckCircle } from 'lucide-react';
 
 export default function RegisterPage() {
   const [formData, setFormData] = useState({
@@ -28,15 +28,7 @@ export default function RegisterPage() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthenticated, login } = useAuthStore();
-
-  // Redirect if already authenticated
-  useEffect(() => {
-    if (isAuthenticated) {
-      const from = location.state?.from?.pathname || '/dashboard';
-      navigate(from, { replace: true });
-    }
-  }, [isAuthenticated, navigate, location]);
+  const register = useAuthStore(state => state.register);
 
   const validateEmail = (value: string) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -49,7 +41,7 @@ export default function RegisterPage() {
   };
 
   const validatePassword = (value: string) => {
-    return value.length >= 8;
+    return value.length >= 10 && /[a-z]/.test(value) && /[A-Z]/.test(value) && /\d/.test(value);
   };
 
   const getPasswordStrength = (password: string) => {
@@ -119,55 +111,14 @@ export default function RegisterPage() {
     setIsLoading(true);
     
     try {
-      // Simulate API call - replace with real endpoint
-      await new Promise(resolve => setTimeout(resolve, 3000));
-      
-      const mockResponse = {
-        success: true,
-        user: {
-          id: Date.now().toString(),
-          email: formData.email,
-          firstName: formData.firstName,
-          lastName: formData.lastName,
-          phone: formData.phone,
-          role: 'member',
-          avatar: null,
-          joinDate: new Date().toISOString(),
-          stats: {
-            workoutsCompleted: 0,
-            streak: 0,
-            totalMinutes: 0,
-            membershipLevel: 'Basic'
-          }
-        },
-        accessToken: 'mock_access_token_here',
-        refreshToken: 'mock_refresh_token_here'
-      };
-
-      if (mockResponse.success) {
-        // After mock registration, login with real credentials
-        await login(formData.email, formData.password);
-        
-        // Send welcome email notification
-        console.log('📧 Sending welcome email to:', mockResponse.user.email);
-        
-        // Redirect to dashboard
-        const from = location.state?.from?.pathname || '/dashboard';
-        navigate(from, { replace: true });
-      } else {
-        setError('Registration failed. Please try again.');
-      }
-    } catch (err) {
-      setError('Registration failed. Please try again.');
-      console.error('Registration error:', err);
+      await register({email:formData.email,password:formData.password,name:`${formData.firstName} ${formData.lastName}`.trim(),phone:formData.phone});
+      navigate('/dashboard',{replace:true});
+    } catch (err:unknown) {
+      const response=(err as {response?:{data?:{message?:string}}}).response;
+      setError(response?.data?.message||'Registration failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleGoogleRegister = () => {
-    // Implement Google OAuth registration flow
-    window.location.href = '/api/auth/google/register';
   };
 
   const passwordStrength = getPasswordStrength(formData.password);
@@ -449,7 +400,7 @@ export default function RegisterPage() {
 
           {/* Social Login */}
           <motion.button
-            onClick={handleGoogleRegister}
+            disabled
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
             className="w-full py-3 px-4 bg-[#0f172a]/50 border border-[#334155] rounded-lg text-white font-medium hover:bg-[#1e293b] transition-all duration-200 flex items-center justify-center gap-3"
@@ -460,7 +411,7 @@ export default function RegisterPage() {
               <path fill="#FBBC05" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75 0 4.27 2.73 7.9 6.5 9.26.475.09.65-.22.65-.49v-1.73c-2.64.57-3.2-1.27-3.2-1.27-.43-.99-1.05-.83-1.33-.8-.59.07-.9.43-.9.43.7.64 1.63 1.44 2.31 1.11.07-.86.35-1.44.63-1.77-.72-.09-1.4-.29-2.05-.57-.03-.27-.18-.64-.3-.87-.32-.45-.84-.31-.84.31.05.47.16.94.28 1.39.12.44.24.88.43 1.31.19.43.4.85.63 1.25.72.46 1.58.2 1.97-.3.39-.5.59-1.05.6-1.62.01-.32.02-.64.02-.95 0-.86-.03-1.72-.1-2.57-.07-.85-.04-1.73-.02-2.58.02-.35.03-.52.05-.52.43 0 .61.53.61.53.39 1.47 1.92 3.26 2.16 5.17.07.3.13.6.2.89.16.68.32 1.34.5 1.99.08.31.16.68.26.93.16.25.33.37.6.37.26-.01.49-.03.7-.05.21-.03.4-.08.6-.17.03-.01.06-.02.09-.04.32-.4.64-.81.97-1.24.33-.43.66-.87.97-1.34l.04-.08.02-.16.01-.27z"/>
               <path fill="#34A853" d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75 0 4.27 2.73 7.9 6.5 9.26.475.09.65-.22.65-.49v-1.73c-2.64.57-3.2-1.27-3.2-1.27-.43-.99-1.05-.83-1.33-.8-.59.07-.9.43-.9.43.7.64 1.63 1.44 2.31 1.11.07-.86.35-1.44.63-1.77-.72-.09-1.4-.29-2.05-.57-.03-.27-.18-.64-.3-.87-.32-.45-.84-.31-.84.31.05.47.16.94.28 1.39.12.44.24.88.43 1.31.19.43.4.85.63 1.25.72.46 1.58.2 1.97-.3.39-.5.59-1.05.6-1.62.01-.32.02-.64.02-.95 0-.86-.03-1.72-.1-2.57-.07-.85-.04-1.73-.02-2.58.02-.35.03-.52.05-.52.43 0 .61.53.61.53.39 1.47 1.92 3.26 2.16 5.17.07.3.13.6.2.89.16.68.32 1.34.5 1.99.08.31.16.68.26.93.16.25.33.37.6.37.26-.01.49-.03.7-.05.21-.03.4-.08.6-.17.03-.01.06-.02.09-.04.32-.4.64-.81.97-1.24.33-.43.66-.87.97-1.34l.04-.08.02-.16.01-.27z"/>
             </svg>
-            Sign up with Google
+            Google sign-up is not configured
           </motion.button>
 
           {/* Divider */}

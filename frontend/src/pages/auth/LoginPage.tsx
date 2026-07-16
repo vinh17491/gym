@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { Dumbbell, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
+import { canAccess,roleHome } from '../../auth/accessPolicy';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -14,21 +15,7 @@ export default function LoginPage() {
   
   const navigate = useNavigate();
   const location = useLocation();
-  const { login, isAuthenticated, user } = useAuthStore();
-
-  // Redirect after login - admin goes to /admin, others go to /dashboard
-  useEffect(() => {
-    if (isAuthenticated && user) {
-      const from = location.state?.from?.pathname;
-      if (from && from !== '/login') {
-        navigate(from, { replace: true });
-      } else if (user.role === 'admin') {
-        navigate('/admin', { replace: true });
-      } else {
-        navigate('/dashboard', { replace: true });
-      }
-    }
-  }, [isAuthenticated, user, navigate, location]);
+  const { login } = useAuthStore();
 
   const validateEmail = (value: string) => {
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
@@ -56,7 +43,9 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      await login(email, password);
+      const current=await login(email,password);
+      const from=typeof location.state?.from?.pathname==='string'?location.state.from.pathname:'';
+      navigate(from&&from.startsWith('/')&&canAccess(current.role,from)?from:roleHome(current.role),{replace:true});
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Login failed. Please try again.';
       setError(msg);

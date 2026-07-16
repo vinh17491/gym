@@ -4,12 +4,13 @@ import { Menu, X, Dumbbell, Search, ChevronRight,ShoppingCart } from 'lucide-rea
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuthStore } from '../../stores/authStore';
 import { useProductsStore } from '../../stores/productsStore';
+import { roleHome } from '../../auth/accessPolicy';
 
 export default function MarketingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const location = useLocation();
-  const { isAuthenticated } = useAuthStore();
+  const { isAuthenticated,user } = useAuthStore();
   const {getCartItemCount,migratePersistedCart}=useProductsStore();
   const cartCount=Math.max(0,getCartItemCount());
   useEffect(()=>{void migratePersistedCart();},[migratePersistedCart]);
@@ -75,7 +76,7 @@ export default function MarketingHeader() {
               <Search size={18} />
             </Link>
             {isAuthenticated ? (
-              <Link to="/dashboard" className="hero-btn-primary text-sm px-6 py-2.5 flex items-center gap-2">
+              <Link to={user?roleHome(user.role):'/login'} className="hero-btn-primary text-sm px-6 py-2.5 flex items-center gap-2">
                 Dashboard <ChevronRight size={16} />
               </Link>
             ) : (
@@ -127,9 +128,9 @@ export default function MarketingHeader() {
               ))}
               <div className="pt-4 border-t border-[#1e293b] space-y-2">
                 <Link to="/cart" onClick={()=>setMobileOpen(false)} className="block px-4 py-3 text-[#94A3B8]">Cart ({cartCount})</Link>
-                {isAuthenticated&&<Link to="/orders" onClick={()=>setMobileOpen(false)} className="block px-4 py-3 text-[#94A3B8]">Đơn hàng của tôi</Link>}
+                {user?.role==='member'&&<Link to="/orders" onClick={()=>setMobileOpen(false)} className="block px-4 py-3 text-[#94A3B8]">My orders</Link>}
                 {isAuthenticated ? (
-                  <Link to="/dashboard" onClick={() => setMobileOpen(false)} className="block hero-btn-primary text-center">
+                  <Link to={user?roleHome(user.role):'/login'} onClick={() => setMobileOpen(false)} className="block hero-btn-primary text-center">
                     Go to Dashboard
                   </Link>
                 ) : (

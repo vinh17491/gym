@@ -1,19 +1,16 @@
 import { useApi } from '../../hooks/useApi';
 import StatCard from '../../components/shared/StatCard';
-import LoadingSpinner from '../../components/ui/loading-spinner';
-import ErrorState from '../../components/ui/error-state';
 import { Activity, Users, DollarSign, Calendar, TrendingUp, Dumbbell, Flame } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { Navigate } from 'react-router-dom';
 
 export default function DashboardPage() {
   const { user } = useAuthStore();
-  const { data, loading, error, refetch } = useApi<{ dailyRevenue: number; activeSubscriptions: number; weeklyWorkouts: number; upcomingClasses: number }>('/analytics/dashboard');
+  const { data: bookings } = useApi<Array<{status:string;booking_date:string}>>('/bookings');
+  const { data: points } = useApi<{balance:number}>('/loyalty/points');
 
   if (user?.role === 'admin') return <Navigate to="/admin" />;
   if (user?.role === 'coach') return <Navigate to="/coach" />;
-
-  if (error) return <ErrorState message={error} onRetry={refetch} />;
 
   return (
     <div className="animate-fade-in">
@@ -24,10 +21,10 @@ export default function DashboardPage() {
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-        <StatCard title="Today's Revenue" value={data?.dailyRevenue ? '$' + Number(data.dailyRevenue).toLocaleString() : ''} icon={<DollarSign size={20} />} trend={{ value: 12, positive: true }} />
-        <StatCard title="Active Members" value={data?.activeSubscriptions || 0} icon={<Users size={20} />} subtitle="Currently subscribed" />
-        <StatCard title="Weekly Workouts" value={data?.weeklyWorkouts || 0} icon={<Dumbbell size={20} />} subtitle="This week" />
-        <StatCard title="Upcoming Classes" value={data?.upcomingClasses || 0} icon={<Calendar size={20} />} subtitle="Scheduled" />
+        <StatCard title="Loyalty Points" value={points?.balance || 0} icon={<DollarSign size={20} />} />
+        <StatCard title="Bookings" value={bookings?.length || 0} icon={<Users size={20} />} subtitle="Your sessions" />
+        <StatCard title="Completed Sessions" value={bookings?.filter(item=>item.status==='completed').length || 0} icon={<Dumbbell size={20} />} />
+        <StatCard title="Upcoming Classes" value={bookings?.filter(item=>['pending','confirmed'].includes(item.status)).length || 0} icon={<Calendar size={20} />} subtitle="Scheduled" />
       </div>
 
       {/* Quick Actions */}

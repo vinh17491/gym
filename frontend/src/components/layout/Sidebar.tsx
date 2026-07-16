@@ -1,73 +1,12 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, Gift, Ticket, ShoppingBag, Star, BarChart3, Settings, LogOut, Wallet, Shield, FileText, Database, Building2, ChevronDown, Menu, X } from 'lucide-react';
+import { LayoutDashboard,Users,Gift,Ticket,ShoppingBag,Star,BarChart3,LogOut,Wallet,Shield,FileText,Database,Building2,ChevronDown,X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { useState } from 'react';
+import { Role } from '../../auth/accessPolicy';
 
-const navLinks = [
-  { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/members', icon: Users, label: 'Members' },
-  { to: '/referral', icon: Gift, label: 'Referral' },
-  { to: '/coupons', icon: ShoppingBag, label: 'Coupons' },
-  { to: '/loyalty', icon: Star, label: 'Loyalty Points' },
-  { to: '/tickets', icon: Ticket, label: 'Tickets' },
-  { to: '/invoices', icon: FileText, label: 'Invoices' },
-  { to: '/crm', icon: Building2, label: 'CRM' },
-  { to: '/orders', icon: ShoppingBag, label: 'Đơn hàng của tôi' },
-]
-
-const adminLinks = [
-  { to: '/admin', icon: Shield, label: 'Admin' },
-  { to: '/admin/products', icon: ShoppingBag, label: 'Products' },
-  { to: '/admin/orders', icon: FileText, label: 'Orders' },
-  { to: '/admin/categories', icon: ShoppingBag, label: 'Categories' },
-  { to: '/admin/brands', icon: Star, label: 'Brands' },
-  { to: '/admin/inventory', icon: Database, label: 'Inventory' },
-  { to: '/admin/analytics', icon: BarChart3, label: 'Analytics' },
-  { to: '/admin/revenue', icon: Wallet, label: 'Revenue' },
-  { to: '/admin/audit', icon: Database, label: 'Audit Log' },
-  { to: '/admin/backup', icon: Shield, label: 'Backup' },
-]
-
-export default function Sidebar({ onClose }: { onClose?: () => void }) {
-  const { user, logout } = useAuthStore();
-  const [adminOpen, setAdminOpen] = useState(true);
-
-  return (
-    <aside className='w-64 bg-[#0F172A] border-r border-[#1e293b] flex flex-col h-full' role='navigation' aria-label='Main navigation'>
-      <div className='p-6 border-b border-[#1e293b]'>
-        <div className='flex items-center justify-between'>
-          <h1 className='text-xl font-bold tracking-tight'>GYM<span className='text-[#22C55E]'>ER</span></h1>
-          {onClose && <button onClick={onClose} className='btn-ghost p-1 rounded-lg md:hidden' aria-label='Close sidebar'><X size={18} /></button>}
-        </div>
-        <p className='text-xs text-[#64748B] mt-1'>Enterprise Management</p>
-      </div>
-      <nav className='flex-1 overflow-y-auto p-4 space-y-1'>
-        {navLinks.map(l => (
-          <NavLink key={l.to} to={l.to} onClick={onClose} className={({isActive}) => 'sidebar-link' + (isActive ? ' active' : '')}>
-            <l.icon size={18} /><span>{l.label}</span>
-          </NavLink>
-        ))}
-        {user?.role === 'admin' && (
-          <div className='pt-3'>
-            <button onClick={() => setAdminOpen(!adminOpen)} className='flex items-center gap-2 w-full px-4 py-2 text-xs font-semibold uppercase tracking-wider text-[#64748B] hover:text-white transition-colors'>
-              <ChevronDown size={14} className={'transition-transform ' + (adminOpen ? '' : '-rotate-90')} />
-              <span>Admin</span>
-            </button>
-            {adminOpen && <div className='mt-1 space-y-1 pl-2'>{adminLinks.map(l => (
-              <NavLink key={l.to} to={l.to} onClick={onClose} className={({isActive}) => 'sidebar-link' + (isActive ? ' active' : '')}>
-                <l.icon size={18} /><span>{l.label}</span>
-              </NavLink>
-            ))}</div>}
-          </div>
-        )}
-      </nav>
-      <div className='p-4 border-t border-[#1e293b]'>
-        <div className='flex items-center gap-3 mb-3'>
-          <div className='w-8 h-8 rounded-full bg-[#22C55E]/20 flex items-center justify-center text-sm font-medium text-[#22C55E]'>{user?.name?.[0] || '?'}</div>
-          <div className='flex-1 min-w-0'><p className='text-sm font-medium truncate'>{user?.name}</p><p className='text-xs text-[#64748B] capitalize'>{user?.role}</p></div>
-        </div>
-        <button onClick={logout} className='sidebar-link w-full justify-start' aria-label='Logout'><LogOut size={18} /><span>Logout</span></button>
-      </div>
-    </aside>
-  )
-}
+const links=[
+  {to:'/dashboard',icon:LayoutDashboard,label:'Dashboard',roles:['member','coach','admin'] as Role[]},{to:'/members',icon:Users,label:'Members',roles:['coach','admin'] as Role[]},{to:'/referral',icon:Gift,label:'Referral',roles:['member'] as Role[]},{to:'/coupons',icon:ShoppingBag,label:'Coupons',roles:['admin'] as Role[]},{to:'/loyalty',icon:Star,label:'Loyalty Points',roles:['member'] as Role[]},{to:'/tickets',icon:Ticket,label:'Tickets',roles:['member','coach','admin'] as Role[]},{to:'/invoices',icon:FileText,label:'Invoices',roles:['member','admin'] as Role[]},{to:'/crm',icon:Building2,label:'CRM',roles:['coach','admin'] as Role[]},{to:'/orders',icon:ShoppingBag,label:'My orders',roles:['member'] as Role[]},
+];
+const adminLinks=[{to:'/admin',icon:Shield,label:'Admin'},{to:'/admin/products',icon:ShoppingBag,label:'Products'},{to:'/admin/orders',icon:FileText,label:'Orders'},{to:'/admin/categories',icon:ShoppingBag,label:'Categories'},{to:'/admin/brands',icon:Star,label:'Brands'},{to:'/admin/inventory',icon:Database,label:'Inventory'},{to:'/admin/analytics',icon:BarChart3,label:'Analytics'},{to:'/admin/revenue',icon:Wallet,label:'Revenue'},{to:'/admin/audit',icon:Database,label:'Audit Log'},{to:'/admin/backup',icon:Shield,label:'Backup'}];
+const LinkItem=({item,onClose}:{item:{to:string;icon:typeof Shield;label:string};onClose?:()=>void})=><NavLink to={item.to} onClick={onClose} className={({isActive})=>'sidebar-link'+(isActive?' active':'')}><item.icon size={18}/><span>{item.label}</span></NavLink>;
+export default function Sidebar({onClose}:{onClose?:()=>void}){const {user,logout}=useAuthStore();const [adminOpen,setAdminOpen]=useState(true);const signOut=async()=>{await logout();window.location.replace('/login');};return <aside className="w-64 bg-[#0F172A] border-r border-[#1e293b] flex flex-col h-full" role="navigation" aria-label="Main navigation"><div className="p-6 border-b border-[#1e293b]"><div className="flex items-center justify-between"><h1 className="text-xl font-bold">GYM<span className="text-[#22C55E]">ER</span></h1>{onClose&&<button onClick={onClose} aria-label="Close sidebar"><X size={18}/></button>}</div></div><nav className="flex-1 overflow-y-auto p-4 space-y-1">{links.filter(link=>user&&link.roles.includes(user.role)).map(item=><LinkItem key={item.to} item={item} onClose={onClose}/>)}{user?.role==='admin'&&<div className="pt-3"><button onClick={()=>setAdminOpen(value=>!value)} className="flex items-center gap-2 w-full px-4 py-2 text-xs uppercase text-[#64748B]"><ChevronDown size={14} className={adminOpen?'':'-rotate-90'}/>Admin</button>{adminOpen&&<div className="pl-2 space-y-1">{adminLinks.map(item=><LinkItem key={item.to} item={item} onClose={onClose}/>)}</div>}</div>}</nav><div className="p-4 border-t border-[#1e293b]"><div className="mb-3"><p className="text-sm truncate">{user?.name}</p><p className="text-xs text-[#64748B] capitalize">{user?.role}</p></div><button onClick={()=>void signOut()} className="sidebar-link w-full"><LogOut size={18}/>Logout</button></div></aside>;}

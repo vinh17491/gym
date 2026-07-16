@@ -7,7 +7,7 @@ import Badge from '../../components/ui/badge';
 import { Search } from 'lucide-react';
 
 export default function CRMPage() {
-  const { data, loading, error, refetch } = useApi<any[]>('/crm');
+  const { data, loading, error, refetch } = useApi<{items:Array<Record<string,unknown>>}>('/crm');
   if (error) return <ErrorState message={error} onRetry={refetch} />;
   const columns = [
     { key: 'name', header: 'Name' },
@@ -19,7 +19,7 @@ export default function CRMPage() {
   return (
     <div className='animate-fade-in space-y-6'>
       <PageHeader title='CRM' subtitle='Customer relationship management' />
-      <div className='card p-0'><DataTable columns={columns} data={data || []} emptyTitle='No customers found' /></div>
+      <div className='card p-0'><DataTable columns={columns} data={data?.items || []} emptyTitle='No customers found' /></div>
     </div>
   );
 }

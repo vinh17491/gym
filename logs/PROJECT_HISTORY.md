@@ -7,3 +7,5 @@
 - TASK-007C: Cart/Checkout, Orders, reservations, payment histories, Bank/QR, Gmail and fulfillment/refund lifecycle completed.
 - 2026-07-14: TASK-007 final closure reached `FULL_TASK_007_COMPLETE` at `427ad52996961648ffc622ca1bf2999a5aab3df4`.
 - 2026-07-15: TASK-008 reactivated as WORKOUT PROGRAM AND MEMBER PROGRESS, excluding AI/camera/pose estimation. Next action is Discovery before migration `0006`.
+- 2026-07-15: Auth/RBAC hardening introduced migration `0006` for session security and ownership controls; TASK-008 remains not started and must select a later migration only after Discovery.
+- 2026-07-16: Auth/RBAC hardening manual browser acceptance passed; temporary resources and isolated database were cleaned up; canonical baseline verified at Products 167, Users 15, Orders 1.

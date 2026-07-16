@@ -2,6 +2,8 @@
 
 Catalog generated from `backend/src/app.ts` and current route files on 2026-07-15. `Auth` means JWT bearer authentication; role checks shown are backend checks.
 
+The complete six-actor authorization matrix and session/ownership rules are maintained in [AUTH_RBAC_SECURITY_MODEL.md](AUTH_RBAC_SECURITY_MODEL.md). `authenticate` validates the live session, token version, active user and current role on every protected request.
+
 ## Auth
 
 | Method | Path | Access | Purpose |
@@ -74,3 +76,5 @@ JWT bearer authentication supplies the authenticated identity and role (`ADMIN`,
 Validation failures use 400-class responses, missing/invalid authentication uses 401, insufficient role/scope uses 403, missing resources use 404, business transition/concurrency conflicts use 409, and incomplete required external configuration may use 503. Central error handling owns unexpected failures. SQL inputs must remain parameterized; pagination, filtering and sorting require validation/allowlists.
 
 Order and Payment histories are immutable normal-flow audit data. Email is attempted after committed commerce state and cannot roll back the transaction. Planned TASK-008 workout/progress APIs are **PLANNED, NOT IMPLEMENTED** and must enforce Member ownership, Coach scope, privacy and concurrency rules from the specification.
+
+Auth/RBAC closure preserved the canonical Order and verified no acceptance fixtures remain in the canonical database.

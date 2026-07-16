@@ -1,52 +1,17 @@
 import { create } from 'zustand';
-import api from '../api/axios';
+import api,{clearAuthStorage,setAuthFailureHandler} from '../api/axios';
 import { User } from '../types';
 
-interface AuthState {
-  user: User | null;
-  isAuthenticated: boolean;
-  initialized: boolean;
-  login: (email: string, password: string) => Promise<void>;
-  logout: () => void;
-  initUser: () => Promise<void>;
-  setUser: (user: User) => void;
-}
-
-export const useAuthStore = create<AuthState>((set, get) => ({
-  user: null,
-  isAuthenticated: !!localStorage.getItem('token'),
-  initialized: false,
-
-  login: async (email, password) => {
-    const { data } = await api.post('/auth/login', { email, password });
-    localStorage.setItem('token', data.data.accessToken);
-    if (data.data.refreshToken) localStorage.setItem('refreshToken', data.data.refreshToken);
-    set({ user: data.data.user, isAuthenticated: true });
-  },
-
-  logout: () => {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      set({ user: null, isAuthenticated: false });
-    },
-
-    setUser: (user) => {
-      set({ user });
-    },
-
-    initUser: async () => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      set({ initialized: true });
-      return;
-    }
-    try {
-      const { data } = await api.get('/auth/me');
-      set({ user: data.data, isAuthenticated: true, initialized: true });
-    } catch {
-      localStorage.removeItem('token');
-      localStorage.removeItem('refreshToken');
-      set({ user: null, isAuthenticated: false, initialized: true });
-    }
-  },
+interface RegisterInput { email:string;password:string;name:string;phone?:string;referral_code?:string }
+interface AuthState { user:User|null;isAuthenticated:boolean;initialized:boolean;login:(email:string,password:string)=>Promise<User>;register:(input:RegisterInput)=>Promise<User>;logout:()=>Promise<void>;initUser:()=>Promise<void>;setUser:(user:User)=>void;clearSession:()=>void }
+const persist=(data:{user:User;accessToken:string;refreshToken:string},set:(value:Partial<AuthState>)=>void)=>{localStorage.setItem('token',data.accessToken);localStorage.setItem('refreshToken',data.refreshToken);set({user:data.user,isAuthenticated:true,initialized:true});};
+export const useAuthStore=create<AuthState>((set)=>({
+  user:null,isAuthenticated:false,initialized:false,
+  clearSession:()=>{clearAuthStorage();set({user:null,isAuthenticated:false,initialized:true});},
+  login:async(email,password)=>{clearAuthStorage();set({user:null,isAuthenticated:false});const {data}=await api.post('/auth/login',{email,password});persist(data.data,set);return data.data.user;},
+  register:async(input)=>{clearAuthStorage();set({user:null,isAuthenticated:false});const {data}=await api.post('/auth/register',input);persist(data.data,set);return data.data.user;},
+  logout:async()=>{try{if(localStorage.getItem('token'))await api.post('/auth/logout');}finally{clearAuthStorage();set({user:null,isAuthenticated:false,initialized:true});}},
+  setUser:(user)=>set({user}),
+  initUser:async()=>{if(!localStorage.getItem('token')){clearAuthStorage();set({user:null,isAuthenticated:false,initialized:true});return;}try{const {data}=await api.get('/auth/me');set({user:data.data,isAuthenticated:true,initialized:true});}catch{clearAuthStorage();set({user:null,isAuthenticated:false,initialized:true});}},
 }));
+setAuthFailureHandler(()=>useAuthStore.getState().clearSession());

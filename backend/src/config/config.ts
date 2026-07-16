@@ -25,6 +25,8 @@ export const config = {
     refreshSecret: process.env.JWT_REFRESH_SECRET || 'dev-refresh-secret-32c',
     accessExpires: process.env.JWT_ACCESS_EXPIRES || '15m',
     refreshExpires: process.env.JWT_REFRESH_EXPIRES || '7d',
+    issuer: process.env.JWT_ISSUER || 'gymfit-api',
+    audience: process.env.JWT_AUDIENCE || 'gymfit-web',
   },
   smtp: {
     host: process.env.SMTP_HOST || 'smtp.gmail.com',

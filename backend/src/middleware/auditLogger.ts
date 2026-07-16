@@ -30,11 +30,11 @@ const errorLogger = winston.createLogger({
   transports: [errorTransport],
 });
 
-export function logAudit(data: Record<string, any>) {
+export function logAudit(data: Record<string, unknown>) {
   auditLogger.info('AUDIT', data);
 }
 
-export function logError(data: Record<string, any>) {
+export function logError(data: Record<string, unknown>) {
   errorLogger.error('ERROR', data);
 }
 
@@ -43,7 +43,6 @@ export function createAuditMiddleware() {
     const start = Date.now();
     const ip = req.ip || '';
     const userAgent = req.get('User-Agent') || '';
-    const userId = (req as any).user?.userId;
 
     res.on('finish', () => {
       const duration = Date.now() - start;
@@ -51,7 +50,7 @@ export function createAuditMiddleware() {
         method: req.method,
         url: req.originalUrl,
         ip,
-        userId,
+        userId: req.user?.userId,
         statusCode: res.statusCode,
         duration,
         userAgent,

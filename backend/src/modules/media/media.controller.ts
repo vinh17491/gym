@@ -166,7 +166,7 @@ export async function processProductMedia(req: Request, res: Response) {
     return res.json({ status: 'OK', product: product.id, path: mediaPath });
     
   } catch (error) {
-    return res.status(500).json({ error: String(error) });
+    return res.status(500).json({ error: 'Media processing failed' });
   }
 }
 
@@ -181,7 +181,7 @@ export async function batchProcessMedia(req: Request, res: Response) {
       ORDER BY p.id
     `);
     
-    const results: any[] = [];
+    const results: Array<{id:number;status:string;path?:string}> = [];
     
     for (const product of products.recordset) {
       try {
@@ -229,7 +229,7 @@ export async function batchProcessMedia(req: Request, res: Response) {
         results.push({ id: product.id, status: 'OK', path: mediaPath });
         
       } catch (error) {
-        results.push({ id: product.id, status: 'ERROR', error: String(error) });
+        results.push({ id: product.id, status: 'ERROR' });
       }
     }
     
@@ -246,7 +246,7 @@ export async function batchProcessMedia(req: Request, res: Response) {
     return res.json(summary);
     
   } catch (error) {
-    return res.status(500).json({ error: String(error) });
+    return res.status(500).json({ error: 'Media processing failed' });
   }
 }
 
@@ -280,6 +280,6 @@ export async function getMediaStatus(req: Request, res: Response) {
       files_on_disk: filesOnDisk
     });
   } catch (error) {
-    return res.status(500).json({ error: String(error) });
+    return res.status(500).json({ error: 'Media status unavailable' });
   }
 }
