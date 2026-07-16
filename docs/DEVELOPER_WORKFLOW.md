@@ -43,3 +43,5 @@ Build/lint commands verified from package scripts: backend `npm run build` and `
 Handoff requires updated canonical docs, link/stale/secret scans, `git diff --check`, acceptance cleanup, reviewed staged paths, scoped commit, pushed branch and exact commit reporting. Never commit `.env`, raw logs, backups, uploads, browser profiles, acceptance artifacts, `node_modules` or `dist`.
 
 Auth/RBAC final closure records manual browser acceptance as PASS. Existing final build PASS was reused; API matrix, IDOR, concurrency and TASK-007 commerce checks were not rerun.
+
+Canonical `0006` migration and integrity closure are recorded separately. Smoke limitations must remain explicit; inconclusive refresh/logout results must not be reported as PASS.

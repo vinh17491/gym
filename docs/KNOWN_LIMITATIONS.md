@@ -12,3 +12,5 @@
 Real Gmail, Bank/QR, authenticated Customer and Admin browser flows are verified; older contrary limitations are fixed and superseded.
 
 Auth/RBAC closure reports manual browser evidence only and does not claim Codex browser automation PASS.
+
+The canonical post-migration smoke run confirmed health and Admin login/me, but refresh rotation/logout revocation was inconclusive and requires a clean follow-up smoke run.

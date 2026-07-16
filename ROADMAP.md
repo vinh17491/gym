@@ -30,3 +30,5 @@ Out of scope: AI, camera, pose estimation, automatic rep counting, medical diagn
 Final project completion requires all three subtasks, migrations and checksums, backend/frontend build gates, authorization/IDOR/concurrency tests, Admin/Coach/Member browser acceptance, acceptance cleanup, canonical DB integrity, documentation, commit, and branch push.
 
 Auth/RBAC closure: manual browser acceptance and offline cleanup passed; no browser automation was rerun.
+
+Canonical migration `0006` is applied. TASK-008 remains not started; next action is its Discovery Gate.

@@ -9,3 +9,4 @@
 - 2026-07-15: TASK-008 reactivated as WORKOUT PROGRAM AND MEMBER PROGRESS, excluding AI/camera/pose estimation. Next action is Discovery before migration `0006`.
 - 2026-07-15: Auth/RBAC hardening introduced migration `0006` for session security and ownership controls; TASK-008 remains not started and must select a later migration only after Discovery.
 - 2026-07-16: Auth/RBAC hardening manual browser acceptance passed; temporary resources and isolated database were cleaned up; canonical baseline verified at Products 167, Users 15, Orders 1.
+- 2026-07-16: Canonical `GYMFIT_DB` migration `0006` applied after verified checksum backup. Pending migrations reached 0; Products 167, Users 15, Orders 1 preserved. Temporary smoke sessions were revoked; refresh/logout smoke remained inconclusive.

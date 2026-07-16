@@ -27,4 +27,6 @@ Troubleshooting: verify `/api/health`, `CORS_ORIGIN`, JWT expiry, SQL Server hos
 
 Acceptance uses a separately verified isolated `DB_NAME`; temporary services must be stopped and the database dropped after acceptance.
 
+Canonical migration operations require a verified SQL Server backup outside the workspace before applying a pending migration. Do not log credentials, tokens or environment contents.
+
 Set `CORS_ORIGIN` to an exact comma-separated allowlist; bearer-token mode does not use browser sessions. Never log access/refresh tokens or any environment secret.

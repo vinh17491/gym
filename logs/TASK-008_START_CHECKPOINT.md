@@ -20,3 +20,5 @@ Exact next steps: audit source/database; classify REUSE/EXTEND/REPLACE/DEPRECATE
 resolve Coach-Member and media decisions; record evidence; only then design 0006.
 
 Auth/RBAC hardening closure completed separately; TASK-008 remains NOT STARTED.
+
+Canonical migration `0006` is complete; TASK-008 remains NOT STARTED and its next action is the Discovery Gate.

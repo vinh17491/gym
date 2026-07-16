@@ -13,3 +13,5 @@ Branch: `hotfix/auth-rbac-hardening`
 Final build/cleanup/hand-off outcome is recorded in the task final report.
 
 Final closure PASS: manual browser acceptance on `5502`/`5501`; temporary services/profile/artifacts removed; isolated database dropped and confirmed absent; canonical Products 167, Users 15, Orders 1, existing Order preserved, no acceptance fixtures.
+
+Canonical migration follow-up: backup and `RESTORE VERIFYONLY` PASS; `0006` applied through the runner; schema/status PASS with pending `0` and checksum mismatches `0`. Canonical health/Admin login/me smoke passed. Refresh rotation/logout smoke was inconclusive and is intentionally not reported as PASS. All temporary AuthSessions were revoked; final active-session count was `0`.

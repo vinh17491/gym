@@ -45,3 +45,5 @@ Legend: `P` public, `S` self only, `A` assigned Coach scope, `R` role-wide resou
 The isolated acceptance suite checks all six actors above across 20 API route groups (163 assertions), including guest denial, M-A/M-B and C-A/C-B IDOR, role change, deactivation, stale access token, refresh replay/family revocation, logout revocation, account switching, booking concurrency and daily-loyalty idempotency. Browser evidence covers Member, Coach and Admin policy/navigation states.
 
 Final browser evidence is manual acceptance PASS on `5502`/`5501`, not Codex browser automation PASS.
+
+Canonical migration `0006` is applied. Canonical smoke verified health and Admin identity; refresh rotation/logout revocation were not marked PASS because the temporary smoke process produced an inconclusive token/session mismatch.

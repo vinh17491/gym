@@ -42,3 +42,5 @@ Current blocker: none. Exact next action: execute the [TASK-008 Discovery Checkl
 - Database rules: [docs/DATABASE_AND_MIGRATIONS.md](docs/DATABASE_AND_MIGRATIONS.md)
 
 Auth/RBAC closure: manual browser acceptance PASS on `5502`/`5501`; temporary resources and isolated database were cleaned up; canonical Products 167, Users 15, Orders 1 and no acceptance fixtures were verified.
+
+Canonical migration closure: backup checksum/VERIFYONLY PASS; migration `0006` applied to `GYMFIT_DB`; pending `0`, checksum mismatches `0`. Read-only integrity preserved Products 167, Users 15, Orders 1. Canonical auth smoke confirmed health and Admin login/me; refresh/logout smoke was inconclusive and is not recorded as PASS.
