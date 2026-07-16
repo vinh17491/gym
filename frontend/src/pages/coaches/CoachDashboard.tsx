@@ -1,34 +1,5 @@
-﻿import { useApi } from '../../hooks/useApi';
-import StatCard from '../../components/shared/StatCard';
-import LoadingSpinner from '../../components/ui/loading-spinner';
-import ErrorState from '../../components/ui/error-state';
-import { motion } from 'framer-motion';
-import { Users, Activity, DollarSign, Calendar } from 'lucide-react';
-
-export default function CoachDashboard() {
-  const { data, loading, error, refetch } = useApi<any>('/coaches/dashboard');
-
-  if (loading) return <LoadingSpinner text="Loading coach dashboard..." />;
-  if (error) return <ErrorState message={error} onRetry={refetch} />;
-
-  return (
-    <div className="space-y-8">
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 className="page-title">Coach Dashboard</h1>
-        <p className="text-dark-400 mt-1">Your coaching overview</p>
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="Assigned Members" value={data?.assignedMembers || 0} icon={<Users size={20} />} />
-        <StatCard title="Active This Month" value={data?.activeMembers || 0} icon={<Activity size={20} />} />
-        <StatCard title="Monthly Earnings" value={data ? `$${Number(data.monthlyEarnings).toLocaleString()}` : '$0'} icon={<DollarSign size={20} />} />
-        <StatCard title="Upcoming Sessions" value={0} icon={<Calendar size={20} />} />
-      </motion.div>
-
-      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-6">
-        <h3 className="section-title">Schedule</h3>
-        <p className="text-dark-400 text-sm">Your coaching schedule will appear here.</p>
-      </motion.div>
-    </div>
-  );
-}
+import { Calendar, ClipboardList, Users, UserCircle as UserRound } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { DashboardPageHeader, DashboardPanel, EmptyState, MetricCard, QuickAction } from '../../components/dashboard/DashboardPrimitives';
+import { useAuthStore } from '../../stores/authStore';
+export default function CoachDashboard(){ const user=useAuthStore(state=>state.user); return <div className="dashboard-page"><DashboardPageHeader eyebrow="KHÔNG GIAN COACH" title={`Chào ${user?.name?.split(' ')[0]||'Coach'}`} description="Tập trung vào lịch hôm nay và những học viên cần theo dõi." action={<Link className="primary-button" to="/booking">Mở lịch</Link>}/><div className="metric-grid"><MetricCard title="Học viên được phân công" value="—" detail="Chưa có API scoped dashboard" icon={<Users size={18}/>} tone="blue"/><MetricCard title="Học viên đang hoạt động" value="—" detail="Chưa có API scoped dashboard" icon={<UserRound size={18}/>} tone="lime"/><MetricCard title="Buổi tập sắp tới" value="—" detail="Chưa có dữ liệu lịch từ backend" icon={<Calendar size={18}/>} tone="amber"/></div><div className="dashboard-grid-main"><DashboardPanel title="Lịch hôm nay" description="Các buổi tập trong phạm vi Coach"><EmptyState title="Chưa có buổi tập nào hôm nay" description="Khi backend cung cấp lịch Coach scoped, các buổi tập sẽ xuất hiện tại đây." action={<Link className="secondary-button" to="/booking">Mở booking</Link>}/></DashboardPanel><DashboardPanel title="Học viên cần theo dõi" description="Không hiển thị dữ liệu ngoài scope"><EmptyState title="Chưa có hàng đợi theo dõi" description="Dữ liệu attention queue chưa được backend cung cấp cho Coach." action={<Link className="secondary-button" to="/members">Xem học viên</Link>}/></DashboardPanel></div><DashboardPanel title="Lối tắt" description="Đi tới chức năng Coach được cấp quyền"><div className="quick-grid"><QuickAction to="/booking" title="Lịch tập" description="Mở booking" icon={<Calendar size={18}/>}/><QuickAction to="/members" title="Học viên" description="Danh sách trong scope" icon={<Users size={18}/>}/><QuickAction to="/crm" title="CRM" description="Theo dõi chăm sóc" icon={<ClipboardList size={18}/>}/></div></DashboardPanel></div>; }

@@ -1,37 +1,19 @@
+import { Bar, BarChart, CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
+import { BarChart3, Boxes, ClipboardList, DollarSign, Package, ShoppingCart, Users } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useApi } from '../../hooks/useApi';
-import StatCard from '../../components/shared/StatCard';
-import LoadingSpinner from '../../components/ui/loading-spinner';
-import ErrorState from '../../components/ui/error-state';
-import PageHeader from '../../components/shared/page-header';
-import { DollarSign, Users, UserPlus, TrendingUp } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { DashboardPageHeader, DashboardPanel, DashboardSkeleton, EmptyState, MetricCard, PanelError, QuickAction, formatVnd } from '../../components/dashboard/DashboardPrimitives';
 
-interface Dashboard { totalRevenue: number; monthlyRevenue: number; dailyRevenue: number; newCustomers: number; activeSubscriptions: number; churnRate: number; }
-
-export default function AdminDashboard() {
-  const { data, loading, error, refetch } = useApi<Dashboard>('/revenue/dashboard');
-  const { data: trend } = useApi<any[]>('/revenue/trend');
-  const { data: sales } = useApi<any[]>('/revenue/membership-sales');
-
-  if (error) return <ErrorState message={error} onRetry={refetch} />;
-  if (loading) return <LoadingSpinner />;
-
-  const chartData = (trend || []).slice(-30);
-  const salesData = (sales || []).slice(0, 10);
-
-  return (
-    <div className='animate-fade-in space-y-6'>
-      <PageHeader title='Admin Dashboard' subtitle='Overview of your business' />
-      <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8'>
-        <StatCard title='Total Revenue' value={data ? '$' + Number(data.totalRevenue).toLocaleString() : ''} icon={<DollarSign size={20} />} trend={{ value: 12, positive: true }} />
-        <StatCard title='Monthly Revenue' value={data ? '$' + Number(data.monthlyRevenue).toLocaleString() : ''} icon={<TrendingUp size={20} />} trend={{ value: 8, positive: true }} />
-        <StatCard title='Active Subscriptions' value={data?.activeSubscriptions || 0} icon={<Users size={20} />} subtitle='Current members' />
-        <StatCard title='New Customers Today' value={data?.newCustomers || 0} icon={<UserPlus size={20} />} />
-      </div>
-      <div className='grid grid-cols-1 lg:grid-cols-2 gap-6'>
-        <div className='card'><h3 className='text-lg font-semibold mb-4'>Revenue Trend (30 days)</h3><div className='h-72'><ResponsiveContainer width='100%' height='100%'><LineChart data={chartData}><CartesianGrid strokeDasharray='3 3' stroke='#1e293b' /><XAxis dataKey='date' stroke='#64748B' fontSize={12} /><YAxis stroke='#64748B' fontSize={12} /><Tooltip contentStyle={{ background: '#111827', border: '1px solid #1e293b', borderRadius: 8 }} /><Line type='monotone' dataKey='revenue' stroke='#22C55E' strokeWidth={2} dot={false} /></LineChart></ResponsiveContainer></div></div>
-        <div className='card'><h3 className='text-lg font-semibold mb-4'>Membership Sales</h3><div className='h-72'><ResponsiveContainer width='100%' height='100%'><BarChart data={salesData}><CartesianGrid strokeDasharray='3 3' stroke='#1e293b' /><XAxis dataKey='plan' stroke='#64748B' fontSize={12} /><YAxis stroke='#64748B' fontSize={12} /><Tooltip contentStyle={{ background: '#111827', border: '1px solid #1e293b', borderRadius: 8 }} /><Bar dataKey='count' fill='#22C55E' radius={[4,4,0,0]} /></BarChart></ResponsiveContainer></div></div>
-      </div>
-    </div>
-  );
+interface AdminDashboardData { totalRevenue:number; monthlyRevenue:number; dailyRevenue:number; newCustomers:number; activeSubscriptions:number; churnRate:number; }
+interface RevenuePoint { date:string; revenue:number; }
+interface MembershipSale { plan_name:string; count:number; revenue:number; }
+export default function AdminDashboard(){
+ const dashboard=useApi<AdminDashboardData>('/revenue/dashboard'); const trend=useApi<RevenuePoint[]>('/revenue/trend'); const sales=useApi<MembershipSale[]>('/revenue/membership-sales');
+ if(dashboard.loading) return <DashboardSkeleton/>;
+ return <div className="dashboard-page"><DashboardPageHeader title="Tổng quan vận hành" description="Nắm bắt doanh thu, khách hàng và các điểm cần xử lý trong ngày." action={<div className="header-links"><Link to="/admin/orders">Đơn hàng</Link><Link to="/admin/inventory">Tồn kho</Link></div>}/>
+  {dashboard.error?<PanelError message={dashboard.error} onRetry={dashboard.refetch}/>:<div className="metric-grid"><MetricCard title="Tổng doanh thu" value={dashboard.data?formatVnd(dashboard.data.totalRevenue):'—'} icon={<DollarSign size={18}/>} detail="Từ các thanh toán hoàn tất"/><MetricCard title="Doanh thu kỳ này" value={dashboard.data?formatVnd(dashboard.data.monthlyRevenue):'—'} icon={<BarChart3 size={18}/>} tone="blue"/><MetricCard title="Thành viên đang hoạt động" value={dashboard.data?.activeSubscriptions ?? '—'} icon={<Users size={18}/>} tone="amber"/><MetricCard title="Khách hàng mới hôm nay" value={dashboard.data?.newCustomers ?? '—'} icon={<Users size={18}/>} tone="slate"/></div>}
+  <div className="dashboard-grid-main"><DashboardPanel title="Xu hướng doanh thu" description="Dữ liệu thanh toán hoàn tất theo ngày"><div className="chart-wrap">{trend.error?<PanelError message={trend.error} onRetry={trend.refetch}/>:trend.loading?<div className="skeleton chart-skeleton"/>:trend.data?.length?<ResponsiveContainer width="100%" height="100%"><LineChart data={trend.data}><CartesianGrid stroke="var(--border-subtle)" vertical={false}/><XAxis dataKey="date" stroke="var(--text-muted)" tickLine={false} axisLine={false}/><YAxis stroke="var(--text-muted)" tickLine={false} axisLine={false} tickFormatter={value=>`${Math.round(Number(value)/1000000)}tr`}/><Tooltip formatter={(value)=>[formatVnd(Number(value||0)),'Doanh thu']} contentStyle={{background:'var(--bg-surface-raised)',border:'1px solid var(--border-subtle)',borderRadius:10}}/><Line type="monotone" dataKey="revenue" stroke="var(--accent)" strokeWidth={2.5} dot={false} activeDot={{r:5}}/></LineChart></ResponsiveContainer>:<EmptyState title="Chưa có dữ liệu doanh thu" description="Chưa ghi nhận thanh toán hoàn tất trong khoảng thời gian này."/>}</div></DashboardPanel>
+   <DashboardPanel title="Doanh số gói tập" description="Phân bổ theo dữ liệu thanh toán thực tế"><div className="chart-wrap">{sales.error?<PanelError message={sales.error} onRetry={sales.refetch}/>:sales.loading?<div className="skeleton chart-skeleton"/>:sales.data?.length?<ResponsiveContainer width="100%" height="100%"><BarChart data={sales.data} layout="vertical" margin={{left:12}}><CartesianGrid stroke="var(--border-subtle)" horizontal={false}/><XAxis type="number" stroke="var(--text-muted)" tickLine={false} axisLine={false}/><YAxis type="category" dataKey="plan_name" width={90} stroke="var(--text-secondary)" tickLine={false} axisLine={false}/><Tooltip formatter={(value)=>[Number(value||0).toLocaleString('vi-VN'),'Số giao dịch']} contentStyle={{background:'var(--bg-surface-raised)',border:'1px solid var(--border-subtle)',borderRadius:10}}/><Bar dataKey="count" fill="var(--accent)" radius={[0,5,5,0]}/></BarChart></ResponsiveContainer>:<EmptyState title="Chưa có doanh số gói tập" description="Dữ liệu sẽ xuất hiện khi có thanh toán hoàn tất."/>}</div></DashboardPanel></div>
+  <div className="dashboard-grid-bottom"><DashboardPanel title="Lối tắt vận hành" description="Truy cập các khu vực quản trị thường dùng"><div className="quick-grid"><QuickAction to="/admin/orders" title="Đơn hàng" description="Xem và xử lý đơn" icon={<ShoppingCart size={18}/>}/><QuickAction to="/admin/inventory" title="Tồn kho" description="Kiểm tra sản phẩm" icon={<Package size={18}/>}/><QuickAction to="/admin/products" title="Sản phẩm" description="Quản lý catalog" icon={<Boxes size={18}/>}/><QuickAction to="/admin/analytics" title="Phân tích" description="Mở báo cáo chi tiết" icon={<BarChart3 size={18}/>}/></div></DashboardPanel><DashboardPanel title="Trạng thái dữ liệu" description="Không tự suy diễn số liệu khi API thiếu dữ liệu"><div className="data-note"><ClipboardList size={18}/><p>Các chỉ số trên lấy trực tiếp từ API quản trị. So sánh xu hướng chỉ hiển thị khi backend cung cấp.</p></div></DashboardPanel></div>
+ </div>;
 }

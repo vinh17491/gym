@@ -14,3 +14,4 @@ Real Gmail, Bank/QR, authenticated Customer and Admin browser flows are verified
 Auth/RBAC closure reports manual browser evidence only and does not claim Codex browser automation PASS.
 
 The canonical post-migration smoke run confirmed health and Admin login/me, but refresh rotation/logout revocation was inconclusive and requires a clean follow-up smoke run.
+Dashboard limitation: the current backend has no Coach-scoped dashboard/schedule endpoint, so the Coach dashboard intentionally renders an unavailable state instead of inventing counts or sessions. Authenticated Member, Coach and Admin desktop/mobile acceptance and account switching passed on 2026-07-16. Browser screenshot capture timed out, so visual evidence used rendered DOM, role navigation and measured overflow rather than persisted screenshots.

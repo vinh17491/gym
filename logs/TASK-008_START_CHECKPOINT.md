@@ -22,3 +22,5 @@ resolve Coach-Member and media decisions; record evidence; only then design 0006
 Auth/RBAC hardening closure completed separately; TASK-008 remains NOT STARTED and is now unblocked.
 
 Canonical migrations `0001–0006` are complete; TASK-008 remains NOT STARTED and its next action is the Discovery Gate before migration `0007`.
+
+The 2026-07-16 dashboard redesign and authenticated Member/Coach/Admin browser acceptance are complete. This frontend-only closure does not begin TASK-008; the Discovery Gate remains the next action.

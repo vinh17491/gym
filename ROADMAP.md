@@ -32,3 +32,5 @@ Final project completion requires all three subtasks, migrations and checksums, 
 Auth/RBAC closure: manual browser acceptance and offline cleanup passed; no browser automation was rerun.
 
 Canonical migrations `0001–0006` are applied and auth/RBAC closure is complete. TASK-008 remains not started; it is unblocked and its next action is the Discovery Gate, followed by migration `0007` if required.
+
+Dashboard UI redesign is complete and authenticated browser-accepted for Member, Coach and Admin at desktop/mobile breakpoints, including account switching and route guards. The isolated acceptance environment was removed. This frontend-only workstream does not start TASK-008 or change backend contracts.
