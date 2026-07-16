@@ -1,6 +1,6 @@
 # Authentication, RBAC and ownership model
 
-Updated 2026-07-15. This document is the authorization baseline after migration `0006_auth_session_security.sql`; it does not begin TASK-008.
+Updated 2026-07-16. This document is the authorization baseline after migration `0006_auth_session_security.sql`; auth/RBAC closure is complete and it does not begin TASK-008.
 
 ## Server authority
 
@@ -46,4 +46,4 @@ The isolated acceptance suite checks all six actors above across 20 API route gr
 
 Final browser evidence is manual acceptance PASS on `5502`/`5501`, not Codex browser automation PASS.
 
-Canonical migration `0006` is applied. Canonical smoke verified health and Admin identity; refresh rotation/logout revocation were not marked PASS because the temporary smoke process produced an inconclusive token/session mismatch.
+Canonical migrations `0001–0006` are applied. Final offline smoke verified the JSON `{refreshToken}` contract, Admin login, refresh rotation, old-token replay rejection with family revocation, logout revocation, refresh-after-logout `401`, and old-access-token `401`. The orphan smoke session was revoked through a narrow transaction-protected maintenance update; active AuthSessions is `0`. TASK-008 is unblocked and must begin with its Discovery Gate; its next migration is `0007`.

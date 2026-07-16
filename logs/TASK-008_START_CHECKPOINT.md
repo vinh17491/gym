@@ -19,6 +19,6 @@ Read first: `docs/TASK-008_DISCOVERY_CHECKLIST.md`, then
 Exact next steps: audit source/database; classify REUSE/EXTEND/REPLACE/DEPRECATED;
 resolve Coach-Member and media decisions; record evidence; only then design 0006.
 
-Auth/RBAC hardening closure completed separately; TASK-008 remains NOT STARTED.
+Auth/RBAC hardening closure completed separately; TASK-008 remains NOT STARTED and is now unblocked.
 
-Canonical migration `0006` is complete; TASK-008 remains NOT STARTED and its next action is the Discovery Gate.
+Canonical migrations `0001–0006` are complete; TASK-008 remains NOT STARTED and its next action is the Discovery Gate before migration `0007`.

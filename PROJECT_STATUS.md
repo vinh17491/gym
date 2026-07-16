@@ -4,7 +4,7 @@ Updated: 2026-07-15 (Asia/Saigon)
 
 ## Auth/RBAC hardening (current)
 
-Authentication/RBAC hardening is in progress on `hotfix/auth-rbac-hardening`. Migration `0006_auth_session_security.sql` is reserved for session security (token versioning, hashed rotating refresh sessions, session revocation and booking-slot uniqueness), not TASK-008. TASK-008 remains **NOT STARTED** and must not use `0006`.
+Authentication/RBAC hardening is complete on `hotfix/auth-rbac-hardening`. Migration `0006_auth_session_security.sql` is reserved for session security (token versioning, hashed rotating refresh sessions, session revocation and booking-slot uniqueness), not TASK-008. TASK-008 remains **NOT STARTED** and starts its migration sequence at `0007` after the Discovery Gate.
 
 ## Current baseline
 
@@ -24,7 +24,7 @@ Authentication/RBAC hardening is in progress on `hotfix/auth-rbac-hardening`. Mi
 
 TASK-007 runtime, authorization/IDOR, real Bank/QR, real Gmail, authenticated Customer browser and authenticated Admin browser acceptance passed. Acceptance data was cleaned and canonical database integrity passed.
 
-Verified canonical counts after TASK-007: Products 167, ProductVariants 167, Inventory 167, ProductImages 1, Orders 0, PaymentStatusHistory 0.
+Verified canonical counts after auth-session closure: Products 167, ProductVariants 167, Inventory 167, ProductImages 1, Users 15, Orders 1, PaymentStatusHistory 0, active AuthSessions 0.
 
 ## TASK-008
 
@@ -43,4 +43,4 @@ Current blocker: none. Exact next action: execute the [TASK-008 Discovery Checkl
 
 Auth/RBAC closure: manual browser acceptance PASS on `5502`/`5501`; temporary resources and isolated database were cleaned up; canonical Products 167, Users 15, Orders 1 and no acceptance fixtures were verified.
 
-Canonical migration closure: backup checksum/VERIFYONLY PASS; migration `0006` applied to `GYMFIT_DB`; pending `0`, checksum mismatches `0`. Read-only integrity preserved Products 167, Users 15, Orders 1. Canonical auth smoke confirmed health and Admin login/me; refresh/logout smoke was inconclusive and is not recorded as PASS.
+Canonical migration closure: backup checksum/VERIFYONLY PASS; migrations `0001–0006` applied to `GYMFIT_DB`; pending `0`, checksum mismatches `0`. Refresh uses JSON `{refreshToken}`; rotation, old-token replay rejection, family revocation, logout revocation, refresh-after-logout `401`, and old-access-token `401` all passed. The orphan smoke session was safely revoked; active AuthSessions is `0`. TASK-008 is unblocked; next action is the Discovery Gate and migration `0007`.
