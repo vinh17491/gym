@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useApi } from '../../hooks/useApi';
 import { motion } from 'framer-motion';
-import { Activity, Flame, Calendar, TrendingUp } from 'lucide-react';
+import { Activity, Flame, Calendar, TrendingUp, CheckCircle } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/loading-spinner';
 import ErrorState from '../../components/ui/error-state';
 
@@ -24,7 +24,9 @@ export default function ProgressPage() {
   if (loadingSum || loadingHist) return <LoadingSpinner text="Đang tải dữ liệu tiến trình..." />;
   if (errorSum || errorHist) return <ErrorState message={errorSum || errorHist || 'Có lỗi xảy ra'} onRetry={() => { refetchSum(); refetchHist(); }} />;
 
-  const maxVolume = history && history.length > 0 ? Math.max(...history.map(h => h.daily_volume)) : 1;
+  const maxVolume = history && history.length > 0 
+    ? Math.max(1, ...history.map(h => h.daily_volume || 0)) 
+    : 1;
 
   return (
     <div className="space-y-8">
@@ -52,7 +54,7 @@ export default function ProgressPage() {
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="card p-6 bg-gradient-to-br from-emerald-900/40 to-slate-900 border-emerald-900/50">
           <div className="flex items-center gap-3 mb-2">
             <div className="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center">
-              <CheckCircleIcon size={20} />
+              <CheckCircle size={20} />
             </div>
             <h3 className="text-slate-300 font-medium">Tỷ Lệ Hoàn Thành</h3>
           </div>
@@ -96,15 +98,16 @@ export default function ProgressPage() {
         </h2>
         
         {history && history.length > 0 ? (
-          <div className="h-64 flex items-end gap-2 px-4">
+          <div className="h-64 flex items-end gap-2 px-4 mt-8">
             {history.map((day, idx) => {
-              const heightPct = Math.max(5, (day.daily_volume / maxVolume) * 100);
+              const vol = day.daily_volume || 0;
+              const heightPct = Math.max(5, (vol / maxVolume) * 100);
               return (
                 <div key={idx} className="flex-1 flex flex-col items-center group">
                   <div className="w-full relative flex justify-center items-end h-full">
                     {/* Tooltip */}
                     <div className="opacity-0 group-hover:opacity-100 absolute -top-10 bg-slate-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap pointer-events-none transition-opacity z-10">
-                      {day.daily_volume} kg<br/>
+                      {vol} kg<br/>
                       <span className="text-[10px] text-slate-400">{new Date(day.date).toLocaleDateString('vi-VN')}</span>
                     </div>
                     {/* Bar */}

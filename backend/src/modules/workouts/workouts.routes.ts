@@ -8,6 +8,9 @@ const router = Router();
 // Get member's assigned workouts — MUST be before /:workoutId to avoid param capture
 router.get('/assigned', authenticate, authorize(UserRole.MEMBER), workoutsController.getMyAssignedWorkouts);
 
+// Coach getting a specific member's assigned workouts
+router.get('/member/:memberId/assigned', authenticate, authorize(UserRole.COACH, UserRole.ADMIN), workoutsController.getMemberAssignedWorkouts);
+
 // Coach & Admin creating a workout program
 router.post('/', authenticate, authorize(UserRole.COACH, UserRole.ADMIN), workoutsController.createWorkout);
 
@@ -22,6 +25,9 @@ router.post('/:workoutId/exercises', authenticate, authorize(UserRole.COACH, Use
 
 // Coach assigning a workout to a member
 router.post('/:workoutId/assign', authenticate, authorize(UserRole.COACH, UserRole.ADMIN), workoutsController.assignWorkout);
+
+// Coach cancelling a workout assignment
+router.post('/assignments/:assignmentId/cancel', authenticate, authorize(UserRole.COACH, UserRole.ADMIN), workoutsController.cancelAssignment);
 
 export default router;
 

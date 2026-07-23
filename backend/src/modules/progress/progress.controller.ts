@@ -66,7 +66,7 @@ export async function getHistory(req: Request, res: Response, next: NextFunction
     const historyResult = await query(`
       SELECT 
         CAST(ws.completed_at AS DATE) as date,
-        SUM(wsl.reps * wsl.weight) as daily_volume
+        COALESCE(SUM(wsl.reps * wsl.weight), 0) as daily_volume
       FROM WorkoutSetLogs wsl
       JOIN WorkoutSessions ws ON wsl.session_id = ws.id
       WHERE ws.user_id = @memberId 

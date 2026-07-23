@@ -64,8 +64,18 @@ export async function finishSession(req: Request, res: Response, next: NextFunct
     if (updateResult.recordset.length === 0) {
       throw new AppError(404, 'Session not found or not owned by user');
     }
+    
+    const session = updateResult.recordset[0];
 
-    sendSuccess(res, updateResult.recordset[0], 'Workout session completed');
+    // Also mark the workout assignment as completed if one exists
+    await query(
+      `UPDATE MemberWorkoutAssignments
+       SET status = 'completed'
+       WHERE member_id = @userId AND workout_id = @workoutId AND status = 'active'`,
+      { userId: req.user!.userId, workoutId: session.workout_id }
+    );
+
+    sendSuccess(res, session, 'Workout session completed');
   } catch (err) {
     next(err);
   }
@@ -95,6 +105,27 @@ export async function getSessions(req: Request, res: Response, next: NextFunctio
 
     const sessionsResult = await query(sql, params);
     sendSuccess(res, sessionsResult.recordset);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function abandonSession(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { sessionId } = req.params;
+    const userId = req.user!.userId;
+
+    // Set is_completed = 0 for all sets in this session
+    await query(
+      `UPDATE WorkoutSetLogs
+       SET is_completed = 0
+       WHERE session_id = @sessionId AND session_id IN (
+         SELECT id FROM WorkoutSessions WHERE user_id = @userId
+       )`,
+      { sessionId, userId }
+    );
+
+    sendSuccess(res, null, 'Session sets reverted to uncompleted');
   } catch (err) {
     next(err);
   }

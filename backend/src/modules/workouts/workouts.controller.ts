@@ -100,14 +100,100 @@ export async function assignWorkout(req: Request, res: Response, next: NextFunct
 export async function getMyAssignedWorkouts(req: Request, res: Response, next: NextFunction) {
   try {
     const result = await query(
-      `SELECT mwa.*, w.name as workout_name, w.description, w.difficulty, w.duration_minutes
+      `SELECT mwa.*, w.name as workout_name, w.description, w.difficulty, w.duration_minutes,
+        (SELECT COUNT(wsl.id) 
+         FROM WorkoutSetLogs wsl 
+         WHERE wsl.session_id = (
+             SELECT TOP 1 id FROM WorkoutSessions ws2 
+             WHERE ws2.workout_id = mwa.workout_id 
+               AND ws2.user_id = mwa.member_id 
+               AND ws2.started_at >= mwa.assigned_at
+               AND ws2.started_at < ISNULL((
+                   SELECT MIN(assigned_at) FROM MemberWorkoutAssignments next_mwa
+                   WHERE next_mwa.workout_id = mwa.workout_id 
+                     AND next_mwa.member_id = mwa.member_id
+                     AND next_mwa.assigned_at > mwa.assigned_at
+               ), '9999-12-31')
+             ORDER BY ws2.started_at DESC
+         ) AND wsl.is_completed = 1) as completed_sets,
+        (SELECT COALESCE(SUM(sets), 0) 
+         FROM WorkoutExercises we 
+         WHERE we.workout_id = mwa.workout_id) as total_sets
        FROM MemberWorkoutAssignments mwa
        JOIN Workouts w ON mwa.workout_id = w.id
-       WHERE mwa.member_id = @userId AND mwa.status = 'active'
+       WHERE mwa.member_id = @userId
        ORDER BY mwa.assigned_at DESC`,
       { userId: req.user!.userId }
     );
     sendSuccess(res, result.recordset);
+  } catch (err) {
+    next(err);
+  }
+}
+export async function getMemberAssignedWorkouts(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { memberId } = req.params;
+    const coachId = req.user!.userId;
+    
+    // Verify coach owns the member
+    const check = await query(`SELECT 1 FROM CRMCustomers WHERE user_id = @memberId AND assigned_coach_id = @coachId`, { memberId, coachId });
+    if (check.recordset.length === 0) throw new AppError(403, 'Not authorized to view workouts for this member');
+
+    const result = await query(
+      `SELECT mwa.*, w.name as workout_name, w.description, w.difficulty, w.duration_minutes,
+        (SELECT COUNT(wsl.id) 
+         FROM WorkoutSetLogs wsl 
+         WHERE wsl.session_id = (
+             SELECT TOP 1 id FROM WorkoutSessions ws2 
+             WHERE ws2.workout_id = mwa.workout_id 
+               AND ws2.user_id = mwa.member_id 
+               AND ws2.started_at >= mwa.assigned_at
+               AND ws2.started_at < ISNULL((
+                   SELECT MIN(assigned_at) FROM MemberWorkoutAssignments next_mwa
+                   WHERE next_mwa.workout_id = mwa.workout_id 
+                     AND next_mwa.member_id = mwa.member_id
+                     AND next_mwa.assigned_at > mwa.assigned_at
+               ), '9999-12-31')
+             ORDER BY ws2.started_at DESC
+         ) AND wsl.is_completed = 1) as completed_sets,
+        (SELECT COALESCE(SUM(sets), 0) 
+         FROM WorkoutExercises we 
+         WHERE we.workout_id = mwa.workout_id) as total_sets
+       FROM MemberWorkoutAssignments mwa
+       JOIN Workouts w ON mwa.workout_id = w.id
+       WHERE mwa.member_id = @memberId
+       ORDER BY mwa.assigned_at DESC`,
+      { memberId }
+    );
+    sendSuccess(res, result.recordset);
+  } catch (err) {
+    next(err);
+  }
+}
+
+export async function cancelAssignment(req: Request, res: Response, next: NextFunction) {
+  try {
+    const { assignmentId } = req.params;
+    const coachId = req.user!.userId;
+
+    // Verify coach owns the member this is assigned to
+    const check = await query(`
+      SELECT 1 FROM MemberWorkoutAssignments mwa
+      JOIN CRMCustomers crm ON mwa.member_id = crm.user_id
+      WHERE mwa.id = @assignmentId AND crm.assigned_coach_id = @coachId
+    `, { assignmentId, coachId });
+
+    if (check.recordset.length === 0) {
+      throw new AppError(403, 'Not authorized to cancel this assignment');
+    }
+
+    await query(`
+      UPDATE MemberWorkoutAssignments 
+      SET status = 'cancelled' 
+      WHERE id = @assignmentId
+    `, { assignmentId });
+
+    sendSuccess(res, null, 'Assignment cancelled successfully');
   } catch (err) {
     next(err);
   }

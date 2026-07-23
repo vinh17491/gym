@@ -14,6 +14,9 @@ router.post('/:sessionId/sets', authenticate, authorize(UserRole.MEMBER), sessio
 // Member finishing a session
 router.put('/:sessionId/finish', authenticate, authorize(UserRole.MEMBER), sessionsController.finishSession);
 
+// Abandon a session
+router.post('/:sessionId/abandon', authenticate, authorize(UserRole.MEMBER), sessionsController.abandonSession);
+
 // Get member's sessions
 router.get('/', authenticate, authorize(UserRole.MEMBER, UserRole.COACH, UserRole.ADMIN), sessionsController.getSessions);
 

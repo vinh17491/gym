@@ -15,6 +15,7 @@ export default function CRMPage() {
   const { data, loading, error, refetch } = useApi<{items:Array<Record<string,any>>}>('/crm');
   const [workouts, setWorkouts] = useState<any[]>([]);
   const [assigningMember, setAssigningMember] = useState<any | null>(null);
+  const [memberWorkouts, setMemberWorkouts] = useState<any[]>([]);
   const [selectedWorkout, setSelectedWorkout] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -23,6 +24,16 @@ export default function CRMPage() {
     api.get('/workouts').then(res => setWorkouts(res.data.data)).catch(console.error);
   }, []);
 
+  const openWorkoutsModal = async (member: any) => {
+    setAssigningMember(member);
+    try {
+      const res = await api.get(`/workouts/member/${member.user_id}/assigned`);
+      setMemberWorkouts(res.data.data || []);
+    } catch (err) {
+      console.error('Failed to load assigned workouts', err);
+    }
+  };
+
   const handleAssign = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedWorkout || !assigningMember) return;
@@ -30,14 +41,30 @@ export default function CRMPage() {
       setIsSubmitting(true);
       await api.post(`/workouts/${selectedWorkout}/assign`, { member_id: assigningMember.user_id });
       toast.success('Workout assigned successfully!');
-      setAssigningMember(null);
       setSelectedWorkout('');
+      // Reload assigned workouts
+      const res = await api.get(`/workouts/member/${assigningMember.user_id}/assigned`);
+      setMemberWorkouts(res.data.data || []);
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Failed to assign workout');
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  const handleCancelAssignment = async (assignmentId: number) => {
+    if (!assigningMember) return;
+    if (!confirm('Are you sure you want to cancel this assignment?')) return;
+    try {
+      await api.post(`/workouts/assignments/${assignmentId}/cancel`);
+      toast.success('Assignment cancelled');
+      const res = await api.get(`/workouts/member/${assigningMember.user_id}/assigned`);
+      setMemberWorkouts(res.data.data || []);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to cancel assignment');
+    }
+  };
+
 
   if (error) return <ErrorState message={error} onRetry={refetch} />;
 
@@ -49,7 +76,7 @@ export default function CRMPage() {
     { key: 'risk_score', header: 'Risk', render: (r: any) => <Badge variant={(r.risk_score || 0) > 70 ? 'red' : (r.risk_score || 0) > 30 ? 'yellow' : 'green'}>{r.risk_score || 0}</Badge> },
     { key: 'actions', header: '', render: (r: any) => (
       <div className="flex justify-end">
-        <Button size="sm" variant="ghost" onClick={() => setAssigningMember(r)} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10" icon={<Dumbbell size={14} />}>Assign Workout</Button>
+        <Button size="sm" variant="ghost" onClick={() => openWorkoutsModal(r)} className="text-emerald-400 hover:text-emerald-300 hover:bg-emerald-400/10" icon={<Dumbbell size={14} />}>Workouts</Button>
       </div>
     )}
   ];
@@ -66,18 +93,50 @@ export default function CRMPage() {
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.95 }}
-              className="w-full max-w-md rounded-2xl bg-[#0F172A] border border-[#1e293b] p-6 shadow-xl"
+              className="w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl bg-[#0F172A] border border-[#1e293b] p-6 shadow-xl"
             >
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-lg font-bold text-white">Assign Workout to {assigningMember.name}</h3>
+                <h3 className="text-lg font-bold text-white">Workouts for {assigningMember.name}</h3>
                 <button onClick={() => setAssigningMember(null)} className="text-[#64748B] hover:text-white transition-colors">
                   <X size={20} />
                 </button>
               </div>
               
+              {/* List of currently assigned workouts */}
+              <div className="mb-6 space-y-3">
+                <h4 className="text-sm font-semibold text-[#94A3B8]">Currently Assigned</h4>
+                {memberWorkouts.length > 0 ? memberWorkouts.map(mw => (
+                  <div key={mw.id} className="bg-slate-900/50 border border-slate-800 p-3 rounded-lg flex justify-between items-center">
+                    <div>
+                      <p className="font-medium text-white">{mw.workout_name}</p>
+                      <div className="flex items-center gap-2 mt-1">
+                        <p className="text-xs text-slate-400">Assigned: {new Date(mw.assigned_at).toLocaleDateString()}</p>
+                        {mw.total_sets > 0 && (
+                          <span className="text-[10px] bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded">
+                            {mw.completed_sets || 0}/{mw.total_sets} sets
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant={mw.status === 'completed' ? 'green' : mw.status === 'cancelled' ? 'red' : 'blue'}>{mw.status}</Badge>
+                      {mw.status === 'active' && (
+                        <button onClick={() => handleCancelAssignment(mw.id)} className="text-slate-500 hover:text-red-400 p-1 rounded hover:bg-red-400/10 transition-colors" title="Cancel assignment">
+                          <X size={14} />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )) : (
+                  <p className="text-sm text-slate-500 italic">No workouts assigned yet.</p>
+                )}
+              </div>
+
+              <hr className="border-slate-800 mb-6" />
+
               <form onSubmit={handleAssign} className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-[#94A3B8] mb-1">Select Workout</label>
+                  <h4 className="text-sm font-semibold text-[#94A3B8] mb-3">Assign New Workout</h4>
                   <select 
                     required
                     className="w-full bg-[#0F172A] border border-[#1e293b] rounded-xl px-4 py-3 text-white transition-all duration-300 focus:outline-none focus:border-[#22C55E]"
@@ -93,10 +152,10 @@ export default function CRMPage() {
 
                 <div className="flex gap-3 pt-4">
                   <Button type="button" variant="ghost" className="flex-1" onClick={() => setAssigningMember(null)}>
-                    Cancel
+                    Close
                   </Button>
                   <Button type="submit" className="flex-1" loading={isSubmitting}>
-                    Assign
+                    Assign Workout
                   </Button>
                 </div>
               </form>

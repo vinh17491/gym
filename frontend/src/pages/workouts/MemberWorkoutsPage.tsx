@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useApi } from '../../hooks/useApi';
 import api from '../../api/axios';
 import { motion } from 'framer-motion';
@@ -18,6 +18,9 @@ interface AssignedWorkout {
   duration_minutes: number;
   assigned_at: string;
   notes: string;
+  status: string;
+  total_sets: number;
+  completed_sets: number;
 }
 
 interface WorkoutExercise {
@@ -45,6 +48,28 @@ export default function MemberWorkoutsPage() {
   const [finishing, setFinishing] = useState(false);
   const [sessionNotes, setSessionNotes] = useState('');
   const [showFinishModal, setShowFinishModal] = useState(false);
+
+  const activeSessionRef = useRef(activeSession);
+  const finishingRef = useRef(finishing);
+
+  useEffect(() => { activeSessionRef.current = activeSession; }, [activeSession]);
+  useEffect(() => { finishingRef.current = finishing; }, [finishing]);
+
+  useEffect(() => {
+    return () => {
+      // If component unmounts and session wasn't finished, abandon it
+      if (activeSessionRef.current && !finishingRef.current) {
+        const token = localStorage.getItem('token');
+        if (token) {
+          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/sessions/${activeSessionRef.current.id}/abandon`, {
+            method: 'POST',
+            headers: { 'Authorization': `Bearer ${token}` },
+            keepalive: true
+          }).catch(console.error);
+        }
+      }
+    };
+  }, []);
 
   const startWorkout = async (workout: AssignedWorkout) => {
     setStarting(workout.workout_id);
@@ -233,11 +258,24 @@ export default function MemberWorkoutsPage() {
           >
             <div className="p-6 flex-1">
               <div className="flex justify-between items-start mb-4">
-                <Badge variant={assignment.difficulty === 'beginner' ? 'green' : assignment.difficulty === 'intermediate' ? 'yellow' : 'red'}>
-                  {assignment.difficulty}
-                </Badge>
+                <div className="flex gap-2">
+                  <Badge variant={assignment.difficulty === 'beginner' ? 'green' : assignment.difficulty === 'intermediate' ? 'yellow' : 'red'}>
+                    {assignment.difficulty}
+                  </Badge>
+                  {assignment.status === 'completed' && (
+                    <Badge variant="blue">Hoàn thành</Badge>
+                  )}
+                  {assignment.status === 'cancelled' && (
+                    <Badge variant="red">Đã hủy</Badge>
+                  )}
+                </div>
                 <div className="flex items-center text-slate-400 text-sm gap-1">
                   <Clock size={14} /> {assignment.duration_minutes || '--'} phút
+                  {assignment.total_sets > 0 && (
+                    <span className="ml-2 px-2 py-0.5 bg-slate-800 rounded text-xs text-slate-300">
+                      {assignment.completed_sets || 0}/{assignment.total_sets} sets
+                    </span>
+                  )}
                 </div>
               </div>
               <h3 className="text-xl font-bold text-white mb-2">{assignment.workout_name}</h3>
@@ -255,13 +293,19 @@ export default function MemberWorkoutsPage() {
               <span className="text-xs text-slate-500 flex items-center gap-1">
                 <Calendar size={12} /> {new Date(assignment.assigned_at).toLocaleDateString('vi-VN')}
               </span>
-              <Button
-                onClick={() => startWorkout(assignment)}
-                loading={starting === assignment.workout_id}
-                icon={<Play size={16} />}
-              >
-                Bắt đầu
-              </Button>
+              {assignment.status === 'completed' ? (
+                <Button variant="ghost" disabled icon={<CheckCircle size={16} />}>Đã hoàn thành</Button>
+              ) : assignment.status === 'cancelled' ? (
+                <Button variant="ghost" disabled className="text-red-400">Đã hủy</Button>
+              ) : (
+                <Button
+                  onClick={() => startWorkout(assignment)}
+                  loading={starting === assignment.workout_id}
+                  icon={<Play size={16} />}
+                >
+                  Bắt đầu
+                </Button>
+              )}
             </div>
           </motion.div>
         )) : (
