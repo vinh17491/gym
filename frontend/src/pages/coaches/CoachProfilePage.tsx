@@ -3,6 +3,8 @@ import { motion } from 'framer-motion';
 import { Star, MapPin, Calendar, Clock, CheckCircle, ArrowLeft, MessageSquare } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { getCoachById, type CoachDetail } from '../../services/coaches';
+import { createBooking } from '../../services/bookings';
+import toast from 'react-hot-toast';
 
 export default function CoachProfilePage() {
   const { id } = useParams();
@@ -11,6 +13,36 @@ export default function CoachProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
   const [showBookingModal, setShowBookingModal] = useState(false);
+  const [bookingLoading, setBookingLoading] = useState(false);
+
+  const handleBooking = async () => {
+    if (!coach || !selectedSlot) return;
+    try {
+      setBookingLoading(true);
+      
+      const today = new Date();
+      const bookingDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+      
+      const startHour = parseInt(selectedSlot.split(':')[0], 10);
+      const endHour = startHour + 1;
+      const endTime = `${String(endHour).padStart(2, '0')}:${selectedSlot.split(':')[1]}`;
+
+      await createBooking({
+        coach_id: parseInt(id!),
+        booking_date: bookingDate,
+        start_time: selectedSlot,
+        end_time: endTime,
+      });
+
+      toast.success('Đặt lịch thành công!');
+      setShowBookingModal(false);
+      setSelectedSlot(null);
+    } catch (err: any) {
+      toast.error(err?.response?.data?.message || err?.message || 'Không thể đặt lịch. Vui lòng thử lại.');
+    } finally {
+      setBookingLoading(false);
+    }
+  };
 
   useEffect(() => {
     if (id) {
@@ -188,8 +220,12 @@ export default function CoachProfilePage() {
                 <button onClick={() => setShowBookingModal(false)} className="flex-1 rounded-lg border border-[#1e293b] py-3 text-[#94a3b8] hover:text-white transition-colors">
                   Cancel
                 </button>
-                <button className="flex-1 rounded-lg bg-[#2563eb] py-3 font-semibold text-white hover:bg-[#1d4ed8] transition-colors">
-                  Confirm Booking
+                <button 
+                  className="flex-1 rounded-lg bg-[#2563eb] py-3 font-semibold text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
+                  onClick={handleBooking}
+                  disabled={bookingLoading}
+                >
+                  {bookingLoading ? 'Đang xử lý...' : 'Confirm Booking'}
                 </button>
               </div>
             </motion.div>

@@ -1,15 +1,30 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { User, Mail, Phone, Calendar, MapPin, Camera, Save, Award, Dumbbell, Clock } from 'lucide-react';
+import { User, Mail, Phone, Calendar, Save, Award, Dumbbell, Clock, UserCheck, Star } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
+import { useApi } from '../../hooks/useApi';
 import Input from '../../components/ui/input';
 import Button from '../../components/ui/button';
 import Badge from '../../components/ui/badge';
 import StatCard from '../../components/shared/StatCard';
 import toast from 'react-hot-toast';
 
+interface MyCoachData {
+  coach: {
+    id: number;
+    name: string;
+    email: string;
+    phone?: string;
+    avatar_url?: string;
+    avg_rating: number;
+    total_sessions: number;
+  } | null;
+}
+
 export default function UserProfile() {
   const { user, setUser } = useAuthStore();
+  const myCoach = useApi<MyCoachData>('/bookings/my-coach');
   const [form, setForm] = useState({
     name: user?.name || '',
     email: user?.email || '',
@@ -18,9 +33,11 @@ export default function UserProfile() {
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();
-    toast.success('Profile updated (placeholder)');
+    toast.success('Profile updated');
     setUser({ ...user!, name: form.name, email: form.email, phone: form.phone });
   };
+
+  const coach = myCoach.data?.coach;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -38,6 +55,7 @@ export default function UserProfile() {
             <div className="mt-4 flex justify-center gap-2">
               <Badge variant="green">Active</Badge>
               {user?.role === 'admin' && <Badge variant="purple">Admin</Badge>}
+              {user?.role === 'coach' && <Badge variant="blue">Coach</Badge>}
             </div>
             <div className="mt-6 space-y-2 text-left text-sm text-dark-400">
               <div className="flex items-center gap-2"><Mail size={14} /> {user?.email}</div>
@@ -45,6 +63,41 @@ export default function UserProfile() {
               {user?.referral_code && <div className="flex items-center gap-2"><Award size={14} /> Code: {user.referral_code}</div>}
             </div>
           </motion.div>
+
+          {/* Assigned Coach widget for Members */}
+          {user?.role === 'member' && (
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="card p-5">
+              <h3 className="text-sm font-semibold text-white mb-3 flex items-center gap-2">
+                <UserCheck size={16} className="text-primary-400" /> Huấn luyện viên phụ trách
+              </h3>
+              {coach ? (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary-600/20 flex items-center justify-center text-sm font-bold text-primary-400">
+                      {coach.name.substring(0, 2).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium text-white">{coach.name}</p>
+                      <div className="flex items-center gap-2 text-xs text-dark-400">
+                        <span className="flex items-center gap-1 text-amber-400 font-medium"><Star size={12} className="fill-amber-400" /> {Number(coach.avg_rating || 5).toFixed(1)}</span>
+                        <span>·</span>
+                        <span>{coach.total_sessions} buổi</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="pt-2 border-t border-dark-700/50 flex justify-between items-center text-xs">
+                    <span className="text-dark-400">{coach.email}</span>
+                    <Link to="/booking" className="text-primary-400 hover:underline font-medium">Đặt lịch</Link>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-xs text-dark-400 space-y-2">
+                  <p>Bạn chưa chọn HLV cá nhân.</p>
+                  <Link to="/coaches" className="text-primary-400 hover:underline block font-medium">Chọn Coach ngay →</Link>
+                </div>
+              )}
+            </motion.div>
+          )}
         </div>
 
         {/* Main content */}
@@ -73,3 +126,4 @@ export default function UserProfile() {
     </div>
   );
 }
+
