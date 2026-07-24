@@ -47,13 +47,13 @@ export async function getCoachAvailability(req: Request, res: Response, next: Ne
     const targetDate = (date as string) || new Date().toISOString().split('T')[0];
 
     const booked = await query(
-      `SELECT start_time, end_time FROM Bookings
+      `SELECT FORMAT(CAST(start_time AS DATETIME), 'HH:mm') as formatted_start_time FROM Bookings
        WHERE coach_id = @coachId AND booking_date = @targetDate AND status IN ('pending', 'confirmed')`,
       { coachId, targetDate }
     );
 
-    const allSlots = ['09:00','10:00','11:00','13:00','14:00','15:00','16:00','17:00'];
-    const bookedTimes = booked.recordset.map((r: { start_time?: string }) => r.start_time?.substring(0, 5));
+    const allSlots = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
+    const bookedTimes = booked.recordset.map((r: { formatted_start_time?: string }) => r.formatted_start_time);
     const available = allSlots.filter(s => !bookedTimes.includes(s));
 
     sendSuccess(res, { date: targetDate, coach_id: coachId, available_slots: available, booked_slots: bookedTimes });
@@ -146,7 +146,7 @@ export async function updateBookingStatus(req: Request, res: Response, next: Nex
     if (!current.recordset[0]) throw new AppError(404, 'Booking not found');
     const transitions: Record<string, string[]> = { pending: ['confirmed', 'cancelled'], confirmed: ['completed', 'cancelled', 'no_show'], completed: [], cancelled: [], no_show: [] };
     if (!transitions[current.recordset[0].status]?.includes(status)) throw new AppError(409, 'Invalid booking status transition');
-    
+
     let scope = '';
     if (role === 'coach') scope = ' AND coach_id=@uid';
     else if (role === 'member') { scope = ' AND member_id=@uid'; if (status !== 'cancelled') throw new AppError(403, 'Forbidden'); }

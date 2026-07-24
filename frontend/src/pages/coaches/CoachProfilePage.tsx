@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { motion } from 'framer-motion';
-import { Star, MapPin, Calendar, Clock, CheckCircle, ArrowLeft, MessageSquare } from 'lucide-react';
+import { Star, MapPin, Calendar, Clock, CheckCircle, ArrowLeft, MessageSquare, ChevronRight, ChevronLeft } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
 import { getCoachById, type CoachDetail } from '../../services/coaches';
-import { createBooking } from '../../services/bookings';
+import { createBooking, getCoachAvailability } from '../../services/bookings';
 import toast from 'react-hot-toast';
 
 export default function CoachProfilePage() {
@@ -12,30 +12,84 @@ export default function CoachProfilePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
+
+  // Date selection logic
+  const [selectedDate, setSelectedDate] = useState<string>('');
+
+  const upcomingDates = useMemo(() => {
+    const dates = [];
+    const today = new Date();
+    for (let i = 0; i < 21; i++) {
+      const d = new Date(today);
+      d.setDate(today.getDate() + i);
+      // Simulate availability: make Sundays unavailable
+      const isAvailable = d.getDay() !== 0;
+      dates.push({
+        date: d,
+        dateString: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
+        dayName: d.toLocaleDateString('vi-VN', { weekday: 'short' }),
+        dayNumber: d.getDate(),
+        isAvailable
+      });
+    }
+    return dates;
+  }, []);
+
+  useEffect(() => {
+    if (!selectedDate && upcomingDates.length > 0) {
+      const firstAvail = upcomingDates.find(d => d.isAvailable);
+      if (firstAvail) setSelectedDate(firstAvail.dateString);
+    }
+  }, [upcomingDates, selectedDate]);
+
+  const [bookedSlotsByDate, setBookedSlotsByDate] = useState<Record<string, string[]>>({});
+
+  useEffect(() => {
+    if (!id || upcomingDates.length === 0) return;
+    const fetchAvailabilities = async () => {
+      const results = await Promise.all(
+        upcomingDates.map(async (d) => {
+          try {
+            const avail = await getCoachAvailability(Number(id), d.dateString);
+            return { dateString: d.dateString, bookedSlots: avail?.booked_slots || [] };
+          } catch {
+            return { dateString: d.dateString, bookedSlots: [] };
+          }
+        })
+      );
+      const availMap: Record<string, string[]> = {};
+      results.forEach(r => {
+        availMap[r.dateString] = r.bookedSlots;
+      });
+      setBookedSlotsByDate(availMap);
+    };
+    fetchAvailabilities();
+  }, [id, upcomingDates]);
   const [showBookingModal, setShowBookingModal] = useState(false);
   const [bookingLoading, setBookingLoading] = useState(false);
 
   const handleBooking = async () => {
-    if (!coach || !selectedSlot) return;
+    if (!coach || !selectedSlot || !selectedDate) return;
     try {
       setBookingLoading(true);
-      
-      const today = new Date();
-      const bookingDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
-      
+
       const startHour = parseInt(selectedSlot.split(':')[0], 10);
       const endHour = startHour + 1;
       const endTime = `${String(endHour).padStart(2, '0')}:${selectedSlot.split(':')[1]}`;
 
       await createBooking({
         coach_id: parseInt(id!),
-        booking_date: bookingDate,
+        booking_date: selectedDate,
         start_time: selectedSlot,
         end_time: endTime,
       });
 
       toast.success('Đặt lịch thành công!');
       setShowBookingModal(false);
+      setBookedSlotsByDate(prev => ({
+        ...prev,
+        [selectedDate]: [...(prev[selectedDate] || []), selectedSlot]
+      }));
       setSelectedSlot(null);
     } catch (err: any) {
       toast.error(err?.response?.data?.message || err?.message || 'Không thể đặt lịch. Vui lòng thử lại.');
@@ -175,21 +229,59 @@ export default function CoachProfilePage() {
               </div>
 
               <div className="mb-6">
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="text-lg font-semibold text-white">Select Date</h3>
+                  <span className="text-xs text-[#94a3b8]">3 Weeks</span>
+                </div>
+
+                {/* Horizontal scrollable date list */}
+                <div className="flex overflow-x-auto gap-2 pb-2 snap-x scrollbar-thin scrollbar-thumb-[#1e293b] scrollbar-track-transparent">
+                  {upcomingDates.map((d, i) => {
+                    const dayBookedSlots = bookedSlotsByDate[d.dateString] || [];
+                    const isFullyBooked = dayBookedSlots.length >= (coach?.availableSlots?.length || 8);
+                    const isSelectable = d.isAvailable && !isFullyBooked;
+
+                    return (
+                      <button
+                        key={i}
+                        disabled={!isSelectable}
+                        onClick={() => setSelectedDate(d.dateString)}
+                        className={`relative flex-shrink-0 flex flex-col items-center justify-center w-16 h-20 rounded-xl border snap-start transition-all ${!isSelectable
+                            ? 'border-[#1e293b] bg-[#020617]/50 text-[#475569] cursor-not-allowed opacity-50'
+                            : selectedDate === d.dateString
+                              ? 'border-[#2563eb] bg-[#2563eb] text-white shadow-lg shadow-blue-500/20'
+                              : 'border-[#1e293b] bg-[#020617] text-[#94a3b8] hover:border-[#3b82f6] hover:text-white'
+                          }`}
+                      >
+                        <span className="text-xs font-medium uppercase tracking-wider mb-1">{d.dayName}</span>
+                        <span className="text-xl font-bold">{d.dayNumber}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="mb-6">
                 <h3 className="mb-3 text-lg font-semibold text-white">Available Slots</h3>
                 <div className="grid grid-cols-3 gap-2">
-                  {coach.availableSlots?.map(slot => (
-                    <button
-                      key={slot}
-                      onClick={() => setSelectedSlot(slot)}
-                      className={`rounded-lg border p-2 text-center text-sm transition-all ${
-                        selectedSlot === slot
-                          ? 'border-[#2563eb] bg-[#2563eb] text-white'
-                          : 'border-[#1e293b] bg-[#020617] text-[#94a3b8] hover:border-[#2563eb] hover:text-white'
-                      }`}
-                    >
-                      {slot}
-                    </button>
-                  ))}
+                  {coach.availableSlots?.map(slot => {
+                    const isBooked = bookedSlotsByDate[selectedDate]?.includes(slot);
+                    return (
+                      <button
+                        key={slot}
+                        disabled={isBooked}
+                        onClick={() => setSelectedSlot(slot)}
+                        className={`rounded-lg border p-2 text-center text-sm transition-all ${isBooked
+                            ? 'border-[#1e293b] bg-[#020617]/50 text-[#475569] cursor-not-allowed opacity-50'
+                            : selectedSlot === slot
+                              ? 'border-[#2563eb] bg-[#2563eb] text-white'
+                              : 'border-[#1e293b] bg-[#020617] text-[#94a3b8] hover:border-[#2563eb] hover:text-white'
+                          }`}
+                      >
+                        {slot}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 
@@ -214,13 +306,14 @@ export default function CoachProfilePage() {
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
             <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="w-full max-w-md rounded-2xl border border-[#1e293b] bg-[#0f172a] p-6">
               <h3 className="mb-4 text-xl font-bold text-white">Book Session with {coach.name}</h3>
-              <p className="mb-4 text-[#94a3b8]">Selected time: <span className="text-white">{selectedSlot}</span></p>
+              <p className="mb-2 text-[#94a3b8]">Date: <span className="text-white">{new Date(selectedDate).toLocaleDateString('vi-VN')}</span></p>
+              <p className="mb-4 text-[#94a3b8]">Time: <span className="text-white">{selectedSlot}</span></p>
               <p className="mb-6 text-[#94a3b8]">Price: <span className="text-white font-semibold">${coach.price}</span></p>
               <div className="flex gap-3">
                 <button onClick={() => setShowBookingModal(false)} className="flex-1 rounded-lg border border-[#1e293b] py-3 text-[#94a3b8] hover:text-white transition-colors">
                   Cancel
                 </button>
-                <button 
+                <button
                   className="flex-1 rounded-lg bg-[#2563eb] py-3 font-semibold text-white hover:bg-[#1d4ed8] transition-colors disabled:opacity-50"
                   onClick={handleBooking}
                   disabled={bookingLoading}
