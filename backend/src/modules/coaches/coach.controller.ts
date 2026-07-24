@@ -17,12 +17,15 @@ export async function getCoaches(req: Request, res: Response, next: NextFunction
 
     const result = await query(
       `SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at,
-              COUNT(DISTINCT w.id) as workout_count
+              COUNT(DISTINCT c.user_id) as total_members,
+              COALESCE(AVG(CAST(b.rating AS FLOAT)), 5.0) as avg_rating,
+              (SELECT COUNT(*) FROM Bookings WHERE coach_id = u.id AND status = 'completed') as total_sessions
        FROM Users u
-       LEFT JOIN Workouts w ON u.id = w.coach_id
+       LEFT JOIN CRMCustomers c ON c.assigned_coach_id = u.id
+       LEFT JOIN Bookings b ON b.coach_id = u.id AND b.status = 'completed' AND b.rating IS NOT NULL
        ${where}
        GROUP BY u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at
-       ORDER BY u.created_at DESC
+       ORDER BY total_sessions DESC, avg_rating DESC
        OFFSET @offset ROWS FETCH NEXT @limit ROWS ONLY`,
       { ...params, offset, limit: Number(limit) }
     );
@@ -49,14 +52,31 @@ export async function getCoachById(req: Request, res: Response, next: NextFuncti
     const { id } = req.params;
     const result = await query(
       `SELECT u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at,
-              COUNT(DISTINCT w.id) as workout_count
+              COUNT(DISTINCT c.user_id) as total_members,
+              COALESCE(AVG(CAST(b.rating AS FLOAT)), 5.0) as avg_rating,
+              (SELECT COUNT(*) FROM Bookings WHERE coach_id = u.id AND status = 'completed') as total_sessions
        FROM Users u
-       LEFT JOIN Workouts w ON u.id = w.coach_id
+       LEFT JOIN CRMCustomers c ON c.assigned_coach_id = u.id
+       LEFT JOIN Bookings b ON b.coach_id = u.id AND b.status = 'completed' AND b.rating IS NOT NULL
        WHERE u.id = @id AND u.role = 'coach' AND u.is_active = 1
        GROUP BY u.id, u.name, u.email, u.phone, u.avatar_url, u.is_active, u.created_at`,
       { id }
     );
     if (result.recordset.length === 0) throw new AppError(404, 'Coach not found');
-    sendSuccess(res, result.recordset[0]);
+
+    const reviews = await query(
+      `SELECT b.id, b.rating, b.review, b.updated_at, u.name as member_name, u.avatar_url as member_avatar
+       FROM Bookings b
+       JOIN Users u ON b.member_id = u.id
+       WHERE b.coach_id = @id AND b.rating IS NOT NULL AND b.status = 'completed'
+       ORDER BY b.updated_at DESC`,
+      { id }
+    );
+
+    sendSuccess(res, {
+      ...result.recordset[0],
+      reviews: reviews.recordset || []
+    });
   } catch (err) { next(err); }
 }
+

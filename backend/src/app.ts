@@ -33,6 +33,9 @@ import adminInventoryRoutes from './modules/admin-inventory/admin-inventory.rout
 import adminOrderRoutes from './modules/admin-orders/admin-orders.routes';
 import orderRoutes from './modules/orders/orders.routes';
 import userRoutes from './modules/users/users.routes';
+import sessionsRoutes from './modules/sessions/sessions.routes';
+import progressRoutes from './modules/progress/progress.routes';
+import workoutsRoutes from './modules/workouts/workouts.routes';
 import { startOrderExpirationRunner } from './modules/orders/order-expiration.runner';
 import path from 'path';
 
@@ -99,6 +102,9 @@ app.use('/api/admin', adminOrderRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/media', mediaRoutes);
+app.use('/api/sessions', sessionsRoutes);
+app.use('/api/progress', progressRoutes);
+app.use('/api/workouts', workoutsRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

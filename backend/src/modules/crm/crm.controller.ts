@@ -2,6 +2,41 @@ import { Request,Response,NextFunction } from 'express';
 import { query } from '../../config/database';
 import { sendSuccess } from '../../utils/response';
 import { AppError } from '../../middleware/errorHandler';
+import * as bcrypt from 'bcryptjs';
+
+export async function addMemberToCRM(req: Request, res: Response, next: NextFunction) {
+  try {
+    const coachId = req.user!.userId;
+    const { email, name, phone } = req.body;
+    if (!email) throw new AppError(400, 'Email is required');
+    
+    const userResult = await query('SELECT id FROM Users WHERE email = @email', { email });
+    if (userResult.recordset.length === 0) {
+      throw new AppError(404, 'User with this email not found. They must register first.');
+    }
+    
+    const userId = userResult.recordset[0].id;
+    
+    // Assign to CRM
+    const crmCheck = await query('SELECT id FROM CRMCustomers WHERE user_id = @userId', { userId });
+    if (crmCheck.recordset.length === 0) {
+      await query(
+        `INSERT INTO CRMCustomers (user_id, assigned_coach_id, created_at)
+         VALUES (@userId, @coachId, GETDATE())`,
+        { userId, coachId }
+      );
+    } else {
+      await query(
+        `UPDATE CRMCustomers SET assigned_coach_id = @coachId WHERE user_id = @userId`,
+        { userId, coachId }
+      );
+    }
+    
+    sendSuccess(res, { user_id: userId, assigned_coach_id: coachId }, 'Member assigned successfully', 201);
+  } catch (error) {
+    next(error);
+  }
+}
 
 const scope=(req:Request,alias='c')=>req.user!.role==='coach'?` AND ${alias}.assigned_coach_id=@coachId`:'';
 const params=(req:Request,extra:Record<string,unknown>={})=>({...extra,...(req.user!.role==='coach'?{coachId:req.user!.userId}:{})});

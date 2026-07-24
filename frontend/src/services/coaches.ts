@@ -51,7 +51,13 @@ export async function getCoachById(id: string): Promise<CoachDetail | null> {
     const data = res.data?.data;
     if (!data) return null;
     
-    // Map DB data to CoachDetail with defaults
+    const reviewsList = (data.reviews || []).map((r: any) => ({
+      user: r.member_name || 'Học viên',
+      rating: r.rating || 5,
+      text: r.review || 'Buổi tập rất hiệu quả và nhiệt tình!',
+      date: r.updated_at ? new Date(r.updated_at).toLocaleDateString('vi-VN') : 'Vừa xong'
+    }));
+
     return {
       id: String(data.id),
       name: data.name,
@@ -60,27 +66,26 @@ export async function getCoachById(id: string): Promise<CoachDetail | null> {
       avatar_url: data.avatar_url,
       is_active: data.is_active,
       created_at: data.created_at,
-      workout_count: data.workout_count || 0,
-      specialty: 'Personal Training',
-      bio: `Experienced fitness coach with ${data.workout_count || 0} workout programs.`,
-      rating: 4.5,
-      reviews: Math.floor(Math.random() * 50) + 20,
-      price: 50 + Math.floor(Math.random() * 30),
-      location: 'Online / Gym',
-      experience: '5+ years',
-      certifications: ['NASM Certified', 'CrossFit Level 1'],
+      workout_count: data.total_sessions || 0,
+      specialty: 'Personal Trainer & Physical Conditioning',
+      bio: `Huấn luyện viên chuyên nghiệp với ${data.total_sessions || 0} buổi tập đã hoàn thành cùng ${data.total_members || 0} học viên tại GymFit.`,
+      rating: Number(data.avg_rating || 5.0),
+      reviews: reviewsList.length,
+      price: 50,
+      location: 'GymFit Fitness Center',
+      experience: '5+ năm kinh nghiệm',
+      certifications: ['NASM Certified Personal Trainer', 'Certified Strength Coach'],
       available: true,
-      availableSlots: ['09:00', '10:00', '11:00', '14:00', '15:00', '16:00'],
+      availableSlots: ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'],
       memberResults: [
-        { name: 'Member 1', result: 'Achieved fitness goals' },
-        { name: 'Member 2', result: 'Improved strength significantly' },
+        { name: 'Học viên tiêu biểu', result: 'Cải thiện thể lực và sức bền vượt bậc' },
+        { name: 'Khách hàng thân thiết', result: 'Đạt mục tiêu tăng cơ giảm mỡ đúng lộ trình' },
       ],
-      reviewsList: [
-        { user: 'Client A', rating: 5, text: 'Great coach!', date: '1 week ago' },
-        { user: 'Client B', rating: 4, text: 'Very knowledgeable', date: '2 weeks ago' },
+      reviewsList: reviewsList.length ? reviewsList : [
+        { user: 'Học viên GymFit', rating: 5, text: 'Coach hướng dẫn rất tận tình và đúng kỹ thuật.', date: 'Gần đây' }
       ],
     };
   } catch {
     return null;
   }
-}
+}
