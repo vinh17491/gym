@@ -10,6 +10,16 @@ export async function create(req: Request, _res: Response, next: NextFunction) {
     });
     const ticket = r.recordset[0];
     await query(`INSERT INTO TicketMessages (ticket_id, sender_id, message) VALUES (@tid, @uid, @msg)`, { tid: ticket.id, uid: req.user!.userId, msg: req.body.description });
+
+    const coachRes = await query('SELECT assigned_coach_id FROM CRMCustomers WHERE user_id = @uid', { uid: req.user!.userId });
+    if (coachRes.recordset.length > 0 && coachRes.recordset[0].assigned_coach_id) {
+      const coachId = coachRes.recordset[0].assigned_coach_id;
+      const userName = req.user!.name || 'A member';
+      await query(`INSERT INTO Notifications (user_id, title, message, type) VALUES (@coachId, 'New Support Ticket', @msg, 'ticket_created')`, {
+        coachId, msg: `Member ${userName} has submitted a new support ticket: ${req.body.subject}`
+      });
+    }
+
     sendSuccess(_res, ticket, 'Ticket created', 201);
   } catch (err) { next(err); }
 }
@@ -88,6 +98,23 @@ export async function reply(req: Request, _res: Response, next: NextFunction) {
 
     if (tk.status === 'closed') await query('UPDATE Tickets SET status=\'in_progress\', updated_at=GETDATE() WHERE id=@id', { id: req.params.id });
     else await query('UPDATE Tickets SET updated_at=GETDATE() WHERE id=@id', { id: req.params.id });
+
+    if (req.user!.role === 'coach') {
+      const coachName = req.user!.name || 'Your coach';
+      await query(`INSERT INTO Notifications (user_id, title, message, type) VALUES (@userId, 'New Ticket Reply', @msg, 'ticket_reply')`, {
+        userId: tk.user_id, msg: `Coach ${coachName} has replied to your ticket: ${tk.subject}`
+      });
+    } else if (req.user!.role === 'member') {
+      const coachRes = await query('SELECT assigned_coach_id FROM CRMCustomers WHERE user_id = @uid', { uid: req.user!.userId });
+      if (coachRes.recordset.length > 0 && coachRes.recordset[0].assigned_coach_id) {
+        const coachId = coachRes.recordset[0].assigned_coach_id;
+        const userName = req.user!.name || 'A member';
+        await query(`INSERT INTO Notifications (user_id, title, message, type) VALUES (@coachId, 'New Ticket Reply', @msg, 'ticket_reply')`, {
+          coachId, msg: `Member ${userName} has replied to the ticket: ${tk.subject}`
+        });
+      }
+    }
+
     sendSuccess(_res, msg.recordset[0], 'Reply sent');
   } catch (err) { next(err); }
 }

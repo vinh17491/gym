@@ -75,6 +75,20 @@ export async function finishSession(req: Request, res: Response, next: NextFunct
       { userId: req.user!.userId, workoutId: session.workout_id }
     );
 
+    // Notify the coach if applicable
+    const coachResult = await query(
+      `SELECT assigned_coach_id FROM CRMCustomers WHERE user_id = @userId`,
+      { userId: req.user!.userId }
+    );
+    if (coachResult.recordset.length > 0 && coachResult.recordset[0].assigned_coach_id) {
+      const coachId = coachResult.recordset[0].assigned_coach_id;
+      const userName = req.user!.name || 'A member';
+      await query(
+        `INSERT INTO Notifications (user_id, title, message, type) VALUES (@coachId, 'Workout Completed', @msg, 'workout_completed')`,
+        { coachId, msg: `Member ${userName} has just completed a workout session.` }
+      );
+    }
+
     sendSuccess(res, session, 'Workout session completed');
   } catch (err) {
     next(err);

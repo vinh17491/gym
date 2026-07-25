@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { Activity, Flame, Calendar, TrendingUp, CheckCircle } from 'lucide-react';
 import LoadingSpinner from '../../components/ui/loading-spinner';
 import ErrorState from '../../components/ui/error-state';
+import { ResponsiveContainer, BarChart, CartesianGrid, XAxis, YAxis, Tooltip, Bar } from 'recharts';
 
 interface ProgressSummary {
   totalVolume: number;
@@ -98,27 +99,33 @@ export default function ProgressPage() {
         </h2>
         
         {history && history.length > 0 ? (
-          <div className="h-64 flex items-end gap-2 px-4 mt-8">
-            {history.map((day, idx) => {
-              const vol = day.daily_volume || 0;
-              const heightPct = Math.max(5, (vol / maxVolume) * 100);
-              return (
-                <div key={idx} className="flex-1 flex flex-col items-center group">
-                  <div className="w-full relative flex justify-center items-end h-full">
-                    {/* Tooltip */}
-                    <div className="opacity-0 group-hover:opacity-100 absolute -top-10 bg-slate-800 text-white text-xs py-1 px-2 rounded whitespace-nowrap pointer-events-none transition-opacity z-10">
-                      {vol} kg<br/>
-                      <span className="text-[10px] text-slate-400">{new Date(day.date).toLocaleDateString('vi-VN')}</span>
-                    </div>
-                    {/* Bar */}
-                    <div 
-                      className="w-full max-w-[40px] bg-blue-500/80 hover:bg-blue-400 rounded-t-sm transition-all duration-300"
-                      style={{ height: `${heightPct}%` }}
-                    ></div>
-                  </div>
-                </div>
-              );
-            })}
+          <div className="h-72 w-full mt-6">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={history} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <defs>
+                  <linearGradient id="colorVol" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8}/>
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0.3}/>
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis 
+                  dataKey="date" 
+                  tickFormatter={(val) => new Date(val).toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' })} 
+                  stroke="#475569" 
+                  fontSize={12} 
+                  tickLine={false} 
+                  axisLine={false} 
+                />
+                <YAxis stroke="#475569" fontSize={12} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: '#0f172a', borderColor: '#1e293b', borderRadius: '8px', color: '#fff' }}
+                  itemStyle={{ color: '#3b82f6' }}
+                  labelFormatter={(val) => new Date(val).toLocaleDateString('vi-VN')}
+                />
+                <Bar dataKey="daily_volume" name="Khối lượng (kg)" fill="url(#colorVol)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         ) : (
           <div className="h-48 flex items-center justify-center text-slate-500 text-sm">

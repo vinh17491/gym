@@ -39,7 +39,13 @@ export async function getCoaches(params?: { search?: string; page?: number; limi
     if (params?.limit) q.set('limit', String(params.limit));
     
     const res = await axios.get(`${API_BASE}/coaches?${q}`);
-    return res.data?.data?.coaches ?? [];
+    const coaches = res.data?.data?.coaches ?? [];
+    return coaches.map((c: any) => ({
+      ...c,
+      avgRating: Number(c.avg_rating) || 5.0,
+      totalMembers: Number(c.total_members) || 0,
+      totalSessions: Number(c.total_sessions) || 0,
+    }));
   } catch {
     return [];
   }

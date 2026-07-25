@@ -61,7 +61,7 @@ export default function MemberWorkoutsPage() {
       if (activeSessionRef.current && !finishingRef.current) {
         const token = localStorage.getItem('token');
         if (token) {
-          fetch(`${import.meta.env.VITE_API_URL || 'http://localhost:5000/api'}/sessions/${activeSessionRef.current.id}/abandon`, {
+          fetch(`${(import.meta as any).env.VITE_API_URL || 'http://localhost:5000/api'}/sessions/${activeSessionRef.current.id}/abandon`, {
             method: 'POST',
             headers: { 'Authorization': `Bearer ${token}` },
             keepalive: true
@@ -74,6 +74,15 @@ export default function MemberWorkoutsPage() {
   const startWorkout = async (workout: AssignedWorkout) => {
     setStarting(workout.workout_id);
     try {
+      // Mark as viewed
+      try {
+        const viewed = JSON.parse(localStorage.getItem('viewed_workouts') || '[]');
+        if (!viewed.includes(workout.id)) {
+          viewed.push(workout.id);
+          localStorage.setItem('viewed_workouts', JSON.stringify(viewed));
+        }
+      } catch (e) {}
+
       // 1. Start session
       const sessionRes = await api.post('/sessions/start', { workout_id: workout.workout_id });
       const session = sessionRes.data.data;
@@ -248,15 +257,23 @@ export default function MemberWorkoutsPage() {
       </motion.div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {assignments && assignments.length > 0 ? assignments.map((assignment, idx) => (
+        {assignments && assignments.length > 0 ? assignments.map((assignment, idx) => {
+          let isNew = false;
+          try {
+            const viewed = JSON.parse(localStorage.getItem('viewed_workouts') || '[]');
+            isNew = !viewed.includes(assignment.id) && assignment.status !== 'completed' && assignment.status !== 'cancelled';
+          } catch (e) {}
+          
+          return (
           <motion.div
             key={assignment.id}
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
-            className="card border border-slate-800 bg-slate-900/50 hover:bg-slate-900 transition-colors flex flex-col"
+            className={`card border flex flex-col transition-colors ${isNew ? 'border-blue-500/50 bg-blue-900/10' : 'border-slate-800 bg-slate-900/50 hover:bg-slate-900'}`}
           >
-            <div className="p-6 flex-1">
+            <div className="p-6 flex-1 relative">
+              {isNew && <div className="absolute top-4 right-4 w-2 h-2 rounded-full bg-blue-500" title="New assignment"></div>}
               <div className="flex justify-between items-start mb-4">
                 <div className="flex gap-2">
                   <Badge variant={assignment.difficulty === 'beginner' ? 'green' : assignment.difficulty === 'intermediate' ? 'yellow' : 'red'}>
@@ -298,17 +315,14 @@ export default function MemberWorkoutsPage() {
               ) : assignment.status === 'cancelled' ? (
                 <Button variant="ghost" disabled className="text-red-400">Đã hủy</Button>
               ) : (
-                <Button
-                  onClick={() => startWorkout(assignment)}
-                  loading={starting === assignment.workout_id}
-                  icon={<Play size={16} />}
-                >
-                  Bắt đầu
+                <Button loading={starting === assignment.workout_id} onClick={() => startWorkout(assignment)} icon={<Play size={16} />}>
+                  Bắt đầu tập
                 </Button>
               )}
             </div>
           </motion.div>
-        )) : (
+          );
+        }) : (
           <div className="col-span-full py-12 text-center text-slate-400 bg-slate-900/30 rounded-2xl border border-slate-800 border-dashed">
             <Activity size={48} className="mx-auto mb-4 opacity-50" />
             <h3 className="text-xl font-semibold text-white mb-2">Chưa có bài tập nào</h3>

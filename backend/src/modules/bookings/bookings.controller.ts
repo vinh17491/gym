@@ -99,6 +99,11 @@ export async function createBooking(req: Request, res: Response, next: NextFunct
       );
     }
 
+    const userName = req.user!.name || 'A member';
+    await query(`INSERT INTO Notifications (user_id, title, message, type) VALUES (@coach_id, 'New Booking Request', @msg, 'booking_created')`, {
+      coach_id, msg: `Member ${userName} has requested a new booking on ${booking_date} at ${start_time}.`
+    });
+
     sendSuccess(res, result.recordset[0], 'Booking created', 201);
   } catch (err) { next(err); }
 }
@@ -163,6 +168,15 @@ export async function updateBookingStatus(req: Request, res: Response, next: Nex
       { id, status, uid: req.user!.userId, coach_notes: coach_notes || null, cancel_reason: cancel_reason || null }
     );
     if (result.recordset.length === 0) throw new AppError(404, 'Booking not found');
+
+    if (status === 'confirmed' && role === 'coach') {
+      const coachName = req.user!.name || 'Your coach';
+      const b = result.recordset[0];
+      await query(`INSERT INTO Notifications (user_id, title, message, type) VALUES (@userId, 'Booking Confirmed', @msg, 'booking_confirmed')`, {
+        userId: b.member_id, msg: `Coach ${coachName} has confirmed your booking on ${new Date(b.booking_date).toLocaleDateString()}.`
+      });
+    }
+
     sendSuccess(res, result.recordset[0], 'Booking updated');
   } catch (err) { next(err); }
 }

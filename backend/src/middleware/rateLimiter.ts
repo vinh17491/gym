@@ -17,7 +17,7 @@ export const apiLimiter = rateLimit({
 
 export const authLimiter = rateLimit({
   windowMs: 60 * 1000,
-  max: config.nodeEnv === 'test' || config.db.database.startsWith('GYMFIT_DB_AUTH_RBAC_ACCEPTANCE_') ? 1000 : 10,
+  max: config.nodeEnv === 'test' || config.db.database.startsWith('GYMFIT_DB_AUTH_RBAC_ACCEPTANCE_') ? 1000 : 100,
   standardHeaders: true,
   legacyHeaders: false,
   skipSuccessfulRequests: true,

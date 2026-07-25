@@ -22,8 +22,8 @@ export default function CoachProfilePage() {
     for (let i = 0; i < 21; i++) {
       const d = new Date(today);
       d.setDate(today.getDate() + i);
-      // Simulate availability: make Sundays unavailable
-      const isAvailable = d.getDay() !== 0;
+      // Simulate availability: make all days available
+      const isAvailable = true;
       dates.push({
         date: d,
         dateString: `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`,
@@ -153,7 +153,7 @@ export default function CoachProfilePage() {
                   <h1 className="mb-2 text-3xl font-bold text-white">{coach.name}</h1>
                   <p className="mb-3 text-lg text-[#60a5fa]">{coach.specialty}</p>
                   <div className="flex flex-wrap gap-4 text-sm text-[#94a3b8]">
-                    <span className="flex items-center gap-1"><Star size={16} className="text-[#fbbf24]" /> {coach.rating} ({coach.reviews} reviews)</span>
+                    <span className="flex items-center gap-1"><Star size={16} className="text-[#fbbf24]" /> {Number(coach.rating || 5).toFixed(1)} ({coach.reviews || 0} reviews)</span>
                     <span className="flex items-center gap-1"><MapPin size={16} /> {coach.location}</span>
                     <span className="flex items-center gap-1"><Calendar size={16} /> {coach.experience}</span>
                   </div>
@@ -177,14 +177,14 @@ export default function CoachProfilePage() {
 
             {/* Reviews Section */}
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="rounded-2xl border border-[#1e293b] bg-[#0f172a] p-8">
-              <h2 className="mb-6 text-2xl font-bold text-white">Reviews ({coach.reviews})</h2>
-              <div className="space-y-6">
-                {coach.reviewsList?.map((review, i) => (
+              <h2 className="mb-6 text-2xl font-bold text-white">Reviews ({coach.reviews || 0})</h2>
+              <div className="space-y-4">
+                {coach.reviewsList?.map((review: any, i: number) => (
                   <div key={i} className="border-b border-[#1e293b] pb-6 last:border-0 last:pb-0">
                     <div className="mb-2 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-[#1e293b] flex items-center justify-center text-sm font-semibold text-white">
-                          {review.user.split(' ').map(n => n[0]).join('')}
+                          {(review.user || 'U').split(' ').map((n: string) => n[0]).join('')}
                         </div>
                         <div>
                           <p className="font-medium text-white">{review.user}</p>
@@ -193,7 +193,7 @@ export default function CoachProfilePage() {
                       </div>
                       <div className="flex items-center gap-1">
                         {Array.from({ length: 5 }).map((_, j) => (
-                          <Star key={j} size={14} className={j < review.rating ? 'text-[#fbbf24]' : 'text-[#1e293b]'} />
+                          <Star key={j} size={14} className={j < review.rating ? 'text-[#fbbf24] fill-[#fbbf24]' : 'text-[#1e293b]'} />
                         ))}
                       </div>
                     </div>
@@ -266,12 +266,23 @@ export default function CoachProfilePage() {
                 <div className="grid grid-cols-3 gap-2">
                   {coach.availableSlots?.map(slot => {
                     const isBooked = bookedSlotsByDate[selectedDate]?.includes(slot);
+                    let isAvailable = !isBooked;
+
+                    const todayStr = `${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(new Date().getDate()).padStart(2, '0')}`;
+                    if (selectedDate === todayStr) {
+                      const now = new Date();
+                      const [hour, minute] = slot.split(':').map(Number);
+                      if (now.getHours() > hour || (now.getHours() === hour && now.getMinutes() > minute)) {
+                        isAvailable = false;
+                      }
+                    }
+
                     return (
                       <button
                         key={slot}
-                        disabled={isBooked}
+                        disabled={!isAvailable}
                         onClick={() => setSelectedSlot(slot)}
-                        className={`rounded-lg border p-2 text-center text-sm transition-all ${isBooked
+                        className={`rounded-lg border p-2 text-center text-sm transition-all ${!isAvailable
                             ? 'border-[#1e293b] bg-[#020617]/50 text-[#475569] cursor-not-allowed opacity-50'
                             : selectedSlot === slot
                               ? 'border-[#2563eb] bg-[#2563eb] text-white'

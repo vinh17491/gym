@@ -12,9 +12,9 @@ import Input from '../../components/ui/input';
 import toast from 'react-hot-toast';
 
 export default function MembersPage() {
-  const { data, loading, error, refetch } = useApi<{items:Array<{id:number;name:string;email:string;phone?:string;role:string;is_active:boolean}>}>('/users?limit=100');
+  const { data, loading, error, refetch } = useApi<{ items: Array<{ id: number; name: string; email: string; phone?: string; role: string; is_active: boolean }> }>('/users?limit=100');
   const [search, setSearch] = useState('');
-  
+
   const [showAddModal, setShowAddModal] = useState(false);
   const [addForm, setAddForm] = useState({ email: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -43,15 +43,17 @@ export default function MembersPage() {
   );
 
   const columns = [
-    { key: 'name', header: 'Name', render: (r: {name:string}) => (
-      <div className="flex items-center gap-2">
-        <div className="w-7 h-7 rounded-full bg-primary-600/20 flex items-center justify-center text-xs font-medium text-primary-400">{r.name?.[0]}</div>
-        <span className="font-medium">{r.name}</span>
-      </div>
-    )},
+    {
+      key: 'name', header: 'Name', render: (r: { name: string }) => (
+        <div className="flex items-center gap-2">
+          <div className="w-7 h-7 rounded-full bg-primary-600/20 flex items-center justify-center text-xs font-medium text-primary-400">{r.name?.[0]}</div>
+          <span className="font-medium">{r.name}</span>
+        </div>
+      )
+    },
     { key: 'email', header: 'Email' },
-    { key: 'role', header: 'Role', render: (r: {role:string}) => <Badge variant="blue">{r.role}</Badge> },
-    { key: 'is_active', header: 'Status', render: (r: {is_active:boolean}) => r.is_active?'Active':'Inactive' },
+    { key: 'role', header: 'Role', render: (r: { role: string }) => <Badge variant="blue">{r.role}</Badge> },
+    { key: 'is_active', header: 'Status', render: (r: { is_active: boolean }) => r.is_active ? 'Active' : 'Inactive' },
   ];
 
   return (
@@ -85,14 +87,14 @@ export default function MembersPage() {
                   <X size={20} />
                 </button>
               </div>
-              
+
               <form onSubmit={handleAddMember} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-dark-300 mb-1">Email *</label>
-                  <Input 
-                    type="email" 
-                    required 
-                    placeholder="member@example.com" 
+                  <Input
+                    type="email"
+                    required
+                    placeholder="member@example.com"
                     value={addForm.email}
                     onChange={e => setAddForm(f => ({ ...f, email: e.target.value }))}
                   />

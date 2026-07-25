@@ -91,6 +91,12 @@ export async function assignWorkout(req: Request, res: Response, next: NextFunct
       { memberId: member_id, coachId: coach_id, workoutId, notes: notes || null }
     );
 
+    const coachName = req.user!.name || 'Your coach';
+    await query(
+      `INSERT INTO Notifications (user_id, title, message, type) VALUES (@memberId, 'New Workout Assigned', @msg, 'workout_assigned')`,
+      { memberId: member_id, msg: `Coach ${coachName} has assigned a new workout to you.` }
+    );
+
     sendSuccess(res, result.recordset[0], 'Workout assigned', 201);
   } catch (err) {
     next(err);

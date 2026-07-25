@@ -25,7 +25,7 @@ interface BookingItem {
 
 const timeSlots = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00', '17:00'];
 
-const days = Array.from({ length: 14 }, (_, i) => {
+const days = Array.from({ length: 21 }, (_, i) => {
   const d = new Date();
   d.setDate(d.getDate() + i);
   return d;
@@ -319,9 +319,20 @@ export default function CoachBooking() {
                     <span className="flex items-center gap-1"><Users size={12} />{coach.total_members} members</span>
                   </div>
                 </div>
-                <Badge variant="green">Book</Badge>
-              </div>
-            </motion.div>
+                <div className="flex flex-col gap-2 items-end">
+                    <Badge variant="green">Book</Badge>
+                    <button 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        window.location.href = `/coaches/${coach.id}`;
+                      }}
+                      className="text-[10px] uppercase font-bold text-blue-400 hover:text-blue-300"
+                    >
+                      View Profile
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
           ))}
         </motion.div>
       )}
@@ -352,7 +363,14 @@ export default function CoachBooking() {
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mt-4">
               {timeSlots.map((slot) => {
                 const formatted = slot;
-                const isAvailable = availableSlots.includes(formatted);
+                let isAvailable = availableSlots.includes(formatted);
+                if (selectedDay === 0) {
+                  const now = new Date();
+                  const [hour, minute] = slot.split(':').map(Number);
+                  if (now.getHours() > hour || (now.getHours() === hour && now.getMinutes() > minute)) {
+                    isAvailable = false;
+                  }
+                }
                 return (
                   <button
                     key={slot}

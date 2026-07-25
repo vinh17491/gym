@@ -35,6 +35,7 @@ import orderRoutes from './modules/orders/orders.routes';
 import userRoutes from './modules/users/users.routes';
 import sessionsRoutes from './modules/sessions/sessions.routes';
 import progressRoutes from './modules/progress/progress.routes';
+import notificationsRoutes from './modules/notifications/notifications.routes';
 import workoutsRoutes from './modules/workouts/workouts.routes';
 import { startOrderExpirationRunner } from './modules/orders/order-expiration.runner';
 import path from 'path';
@@ -104,6 +105,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/media', mediaRoutes);
 app.use('/api/sessions', sessionsRoutes);
 app.use('/api/progress', progressRoutes);
+app.use('/api/notifications', notificationsRoutes);
 app.use('/api/workouts', workoutsRoutes);
 
 app.use(notFoundHandler);
